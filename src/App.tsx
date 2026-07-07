@@ -2735,191 +2735,6 @@ function requestWhatsAppExpress(nomorHp, pesan) {
             </div>
           )}
 
-          {/* ======================= TAB 3: TRACKING DROP OUT & PROAKTIF JADWAL (BUMIL MONITORING) ======================= */}
-          {activeTab === 'lacak' && (
-            <div id="dropout-tracking-view-tab" className="space-y-4">
-              
-              <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 flex flex-col sm:flex-row items-start gap-4">
-                <div className="p-3 bg-teal-50 text-teal-700 rounded-full shrink-0">
-                  <ShieldAlert size={24} />
-                </div>
-                <div className="space-y-1">
-                  <h4 className="text-sm font-bold text-slate-800 font-sans">Pusat Pelacakan & Imbauan Proaktif (Early Warning System)</h4>
-                  <p className="text-xs text-slate-600 leading-relaxed font-sans">
-                    Sistem ini membantu bidan mendeteksi ibu hamil yang status imunisasinya bermasalah. Anda dapat melacak kasus <strong>Drop Out (Telat Dosis)</strong> maupun menjangkau ibu hamil yang statusnya <strong>Mendekati Jadwal Suntik Selanjutnya</strong> (kurang dari 14 hari) untuk pengingat proaktif via WhatsApp.
-                  </p>
-                </div>
-              </div>
-
-              {/* TWO SEGMENTS SELECTION TAB */}
-              <div className="flex bg-slate-100 p-1 rounded-xl max-w-md border border-slate-200 font-sans">
-                <button
-                  onClick={() => setLacakSubFilter('dropout')}
-                  className={`flex-1 py-1.5 text-center text-xs font-extrabold rounded-lg cursor-pointer transition-all ${
-                    lacakSubFilter === 'dropout'
-                      ? 'bg-white text-rose-750 shadow-xs'
-                      : 'text-slate-500 hover:text-slate-850'
-                  }`}
-                >
-                  🚨 Drop Out (Telat) ({filteredPatients.filter(p => calculateKeteranganStatus(p) === 'Drop Out').length})
-                </button>
-                <button
-                  onClick={() => setLacakSubFilter('mendekati')}
-                  className={`flex-1 py-1.5 text-center text-xs font-extrabold rounded-lg cursor-pointer transition-all ${
-                    lacakSubFilter === 'mendekati'
-                      ? 'bg-white text-amber-750 shadow-xs'
-                      : 'text-slate-500 hover:text-slate-855'
-                  }`}
-                >
-                  ⏳ Mendekati Jadwal ({filteredPatients.filter(p => calculateKeteranganStatus(p) === 'Mendekati Jadwal').length})
-                </button>
-              </div>
-
-              {/* LIST OF TRIPPED INJECTIABLE RECORD HOLDERS */}
-              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
-                <div className="p-4 border-b border-slate-100 flex items-center justify-between font-sans">
-                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                    {lacakSubFilter === 'dropout' ? (
-                      <>
-                        <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span>
-                        <span>Terdeteksi {filteredPatients.filter(p => calculateKeteranganStatus(p) === 'Drop Out').length} Kasus Drop Out (Telat Dosis)</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block animate-pulse"></span>
-                        <span>Terdeteksi {filteredPatients.filter(p => calculateKeteranganStatus(p) === 'Mendekati Jadwal').length} Ibu Hamil Mendekati Jadwal TT</span>
-                      </>
-                    )}
-                  </h4>
-                  <button 
-                    onClick={() => setShowWaLog(!showWaLog)}
-                    className="text-xs text-teal-600 hover:underline font-bold flex items-center space-x-1 cursor-pointer"
-                  >
-                    <span>{showWaLog ? 'Tutup Log Pengiriman' : 'Lihat Log Pengiriman WA'}</span>
-                  </button>
-                </div>
-
-                {/* WHATSAPP ACTION HISTORIC LOGS IF EXPANDED */}
-                {showWaLog && (
-                  <div className="bg-slate-50 border-b border-slate-200 p-4 space-y-2 text-xs font-sans">
-                    <p className="font-bold text-slate-750">Riwayat Pengiriman Notifikasi WhatsApp:</p>
-                    <div className="max-h-[150px] overflow-y-auto space-y-1.5">
-                      {whatsappLogs.length === 0 ? (
-                        <p className="text-slate-400 italic">Belum ada pesan terkirim pada sesi ini.</p>
-                      ) : (
-                        whatsappLogs.map((log) => (
-                          <div key={log.id} className="p-2 bg-white rounded border border-slate-200 text-[11px] flex justify-between items-center">
-                            <div>
-                              <p className="font-bold">{log.namaLengkapIbu} ({log.nomorHp}) - {log.desa}</p>
-                              <p className="text-slate-500 italic">"{log.pesan.slice(0, 75)}..."</p>
-                            </div>
-                            <div className="text-right shrink-0 ml-3">
-                              <span className="text-emerald-600 font-extrabold block">✓ {log.status}</span>
-                              <span className="text-slate-400 text-[9px]">{log.tanggalKirim}</span>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* THE LIST TABLE/CARDS */}
-                <div className="divide-y divide-slate-100 font-sans">
-                  {/* FILTER BY SUB-FILTER ACTION SELECTIVITY */}
-                  {(() => {
-                    const targetStatus = lacakSubFilter === 'dropout' ? 'Drop Out' : 'Mendekati Jadwal';
-                    const targetList = filteredPatients.filter(p => calculateKeteranganStatus(p) === targetStatus);
-
-                    if (targetList.length === 0) {
-                      return (
-                        <div className="p-10 text-center text-slate-400 font-sans">
-                          <CheckCircle size={36} className={`${lacakSubFilter === 'dropout' ? 'text-emerald-500' : 'text-sky-500'} mx-auto mb-2`} />
-                          <p className="font-bold text-xs uppercase tracking-wide">Semua Terpantau Aman</p>
-                          <p className="text-xs pt-1">
-                            {lacakSubFilter === 'dropout'
-                              ? 'Tidak ada ibu hamil dengan status Drop Out di wilayah cakupan rujukan Anda.'
-                              : 'Tidak ada ibu hamil dengan jadwal imunisasi berikutnya dalam 14 hari kedepan.'}
-                          </p>
-                        </div>
-                      );
-                    }
-
-                    return targetList.map((p) => {
-                      const info = getPatientScheduleInfo(p);
-                      return (
-                        <div key={p.no} className={`p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 ${
-                          lacakSubFilter === 'dropout' ? 'bg-rose-50/10' : 'bg-amber-50/10'
-                        }`}>
-                          <div className="space-y-1.5">
-                            <div className="flex items-center space-x-2 font-sans">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                lacakSubFilter === 'dropout' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
-                              }`}>
-                                Desa {p.desa}
-                              </span>
-                              <h5 className="font-extrabold text-slate-800 text-sm">{p.namaLengkapIbu}</h5>
-                              <span className={`px-1.5 py-0.2 rounded text-[9px] font-black uppercase ${
-                                lacakSubFilter === 'dropout' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-yellow-50 text-yellow-800 border border-yellow-200 animate-pulse'
-                              }`}>
-                                {lacakSubFilter === 'dropout' ? 'Drop Out' : 'Segera Vaksinasi'}
-                              </span>
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-500">
-                              <p>📞 No. HP: <span className="font-bold text-slate-700">{p.nomorHp || 'Tidak Ada'}</span></p>
-                              <p>🎂 NIK: <span className="font-mono text-slate-700">{p.nikIbu}</span></p>
-                              <p>🤰 Obstetri: <span className="font-bold font-mono text-slate-700 font-sans">G{p.gravida ?? '-'} P{p.paritas ?? '-'} A{p.abortus ?? '-'}</span></p>
-                              <p>⏳ Jarak Lahir: <span className="font-bold text-slate-700">{p.jarakKelahiran || 'Tidak Ada / -'}</span></p>
-                              <p>📅 Dosis Terakhir: <span className="font-bold text-slate-700">{info.prevAntigen || 'Belum Ada'} ({info.prevDateStr || '-'})</span></p>
-                              <p className={lacakSubFilter === 'dropout' ? 'text-red-700 font-bold' : 'text-amber-700 font-bold'}>
-                                {lacakSubFilter === 'dropout' ? '🚨 Tertunda:' : '⏳ Jadwal Dekat:'} <span className="font-extrabold">{info.nextDose} ({info.dueDateStr || 'Segera'})</span>
-                              </p>
-                            </div>
-                            
-                            <p className={`text-[11px] font-semibold italic ${
-                              lacakSubFilter === 'dropout' ? 'text-red-700' : 'text-amber-700'
-                            }`}>
-                              {lacakSubFilter === 'dropout' ? (
-                                <>⚙️ Aturan: Minimal selang waktu ke {info.nextDose} telah lewat. Mohon hubungi bidan segera.</>
-                              ) : (
-                                <>⏳ Estimasi: Sisa {info.daysRemaining} Hari lagi sebelum tenggat jatuh tempo optimal.</>
-                              )}
-                            </p>
-                          </div>
-
-                          <div className="flex items-center space-x-2 justify-end shrink-0 pt-2 md:pt-0">
-                            {/* WhatsApp Reminder Button */}
-                            <button 
-                              onClick={() => requestWhatsappModal(p)}
-                              className={`p-2 rounded-lg text-white font-bold text-xs flex items-center space-x-1 cursor-pointer transition-colors ${
-                                lacakSubFilter === 'dropout'
-                                  ? 'bg-rose-600 hover:bg-rose-700'
-                                  : 'bg-amber-600 hover:bg-amber-700'
-                              }`}
-                            >
-                              <Send size={13} />
-                              <span>{lacakSubFilter === 'dropout' ? 'Kirim Imbauan WA' : 'Kirim Pengingat WA'}</span>
-                            </button>
-
-                            <button 
-                              onClick={() => openEditForm(p)}
-                              className="p-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 font-bold text-xs flex items-center cursor-pointer transition-colors"
-                            >
-                              Perbarui Rekam
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    });
-                  })()}
-                </div>
-
-              </div>
-
-            </div>
-          )}
-
           {/* ======================= TAB 4: INTERVAL & JADWAL TT PENDIDIKAN ======================= */}
           {activeTab === 'interval' && (
             <div id="interval-standards-view-tab" className="space-y-4 font-sans">
@@ -3443,60 +3258,62 @@ function requestWhatsAppExpress(nomorHp, pesan) {
                     {(() => {
                       const targetStatus = lacakSubFilter === 'dropout' ? 'Drop Out' : 'Mendekati Jadwal';
                       const targetList = filteredPatients.filter(p => calculateKeteranganStatus(p) === targetStatus);
-                      return targetList.length === 0 ? (
-                        <div className="p-10 text-center text-slate-400">
-                          <CheckCircle size={36} className="text-emerald-500 mx-auto mb-2" />
-                          <p className="font-bold text-xs uppercase tracking-wide">Semua Terpantau Aman</p>
-                          <p className="text-xs pt-1">{lacakSubFilter === 'dropout' ? 'Tidak ada ibu hamil dengan status Drop Out.' : 'Tidak ada ibu hamil mendekati jadwal dalam 14 hari.'}</p>
-                        </div>
-                      ) : (
-                        targetList.map((p) => {
-                          const nextDose = getNextTtDate(p);
-                          const lastDose = getLastTtDate(p);
-                          const nextScheduled = getCurrentTtDose(p) === 'Belum' ? 'TT1' : !p.tt1 ? 'TT1' : !p.tt2 ? 'TT2' : !p.tt3 ? 'TT3' : !p.tt4 ? 'TT4' : 'TT5';
-                          const prevAntigen = getCurrentTtDose(p);
-                          const prevDate = lastDose;
-                          const info = (() => {
-                            const now = new Date();
-                            const dueDate = new Date(p.tanggalTt1 || now);
-                            if (nextScheduled === 'TT2' && p.tanggalTt1) dueDate.setDate(new Date(p.tanggalTt1).getDate() + 28);
-                            else if (nextScheduled === 'TT3' && p.tanggalTt2) dueDate.setDate(new Date(p.tanggalTt2).getDate() + 180);
-                            else if (nextScheduled === 'TT4' && p.tanggalTt3) dueDate.setDate(new Date(p.tanggalTt3).getDate() + 365);
-                            else if (nextScheduled === 'TT5' && p.tanggalTt4) dueDate.setDate(new Date(p.tanggalTt4).getDate() + 365);
-                            const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-                            return { dueDateStr: dueDate.toLocaleDateString('id-ID'), daysRemaining: diffDays };
-                          })();
-                          return (
-                            <div key={p.no} className="p-4 flex items-start gap-3 hover:bg-slate-50 transition-colors">
-                              <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-extrabold text-xs shrink-0 ${lacakSubFilter === 'dropout' ? 'bg-rose-500' : 'bg-amber-500'}`}>
-                                {lacakSubFilter === 'dropout' ? '!' : '⏳'}
+                      if (targetList.length === 0) {
+                        return (
+                          <div className="p-10 text-center text-slate-400">
+                            <CheckCircle size={36} className={`${lacakSubFilter === 'dropout' ? 'text-emerald-500' : 'text-sky-500'} mx-auto mb-2`} />
+                            <p className="font-bold text-xs uppercase tracking-wide">Semua Terpantau Aman</p>
+                            <p className="text-xs pt-1">
+                              {lacakSubFilter === 'dropout'
+                                ? 'Tidak ada ibu hamil dengan status Drop Out di wilayah cakupan rujukan Anda.'
+                                : 'Tidak ada ibu hamil dengan jadwal imunisasi berikutnya dalam 14 hari kedepan.'}
+                            </p>
+                          </div>
+                        );
+                      }
+                      return targetList.map((p) => {
+                        const info = getPatientScheduleInfo(p);
+                        return (
+                          <div key={p.no} className={`p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 ${
+                            lacakSubFilter === 'dropout' ? 'bg-rose-50/10' : 'bg-amber-50/10'
+                          }`}>
+                            <div className="space-y-1.5">
+                              <div className="flex items-center space-x-2">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  lacakSubFilter === 'dropout' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
+                                }`}>Desa {p.desa}</span>
+                                <h5 className="font-extrabold text-slate-800 text-sm">{p.namaLengkapIbu}</h5>
+                                <span className={`px-1.5 py-0.2 rounded text-[9px] font-black uppercase ${
+                                  lacakSubFilter === 'dropout' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-yellow-50 text-yellow-800 border border-yellow-200 animate-pulse'
+                                }`}>{lacakSubFilter === 'dropout' ? 'Drop Out' : 'Segera Vaksinasi'}</span>
                               </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-start justify-between gap-2">
-                                  <div>
-                                    <p className="font-bold text-slate-800 text-sm">{p.namaLengkapIbu}</p>
-                                    <p className="text-[11px] text-slate-400">{p.desa} — HP: {p.nomorHp || '-'}</p>
-                                  </div>
-                                  <div className="text-right shrink-0">
-                                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${lacakSubFilter === 'dropout' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>
-                                      {prevAntigen} → {nextScheduled}
-                                    </span>
-                                    <p className="text-[10px] text-slate-400 mt-0.5">{lacakSubFilter === 'dropout' ? `Telat ${Math.abs(info.daysRemaining)} hari` : `${info.daysRemaining} hari lagi`}</p>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2 mt-1.5">
-                                  <button onClick={() => { setActiveWhatsappModal(p); setCustomMsg(`Yth. Ibu ${p.namaLengkapIbu} di Desa ${p.desa}. Kami dari Puskesmas Kabukarudi mengingatkan bahwa ${lacakSubFilter === 'dropout' ? 'waktu imunisasi Anda telah lewat' : 'jadwal imunisasi Anda akan tiba'}. Mohon segera ke bidan terdekat. Terima kasih.`); }} className="text-[11px] font-bold bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1 rounded-lg transition-colors cursor-pointer">
-                                    📲 Kirim WA
-                                  </button>
-                                  <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${(p.tindakLanjut || '') === 'Kunjungan Rumah' ? 'bg-blue-100 text-blue-700' : (p.tindakLanjut || '') === 'Pengulangan Dosis' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-500'}`}>
-                                    {p.tindakLanjut || '-'}
-                                  </span>
-                                </div>
+                              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-500">
+                                <p>📞 No. HP: <span className="font-bold text-slate-700">{p.nomorHp || 'Tidak Ada'}</span></p>
+                                <p>🎂 NIK: <span className="font-mono text-slate-700">{p.nikIbu}</span></p>
+                                <p>🤰 Obstetri: <span className="font-bold font-mono text-slate-700">G{p.gravida ?? '-'} P{p.paritas ?? '-'} A{p.abortus ?? '-'}</span></p>
+                                <p>⏳ Jarak Lahir: <span className="font-bold text-slate-700">{p.jarakKelahiran || 'Tidak Ada / -'}</span></p>
+                                <p>📅 Dosis Terakhir: <span className="font-bold text-slate-700">{info.prevAntigen || 'Belum Ada'} ({info.prevDateStr || '-'})</span></p>
+                                <p className={lacakSubFilter === 'dropout' ? 'text-red-700 font-bold' : 'text-amber-700 font-bold'}>
+                                  {lacakSubFilter === 'dropout' ? '🚨 Tertunda:' : '⏳ Jadwal Dekat:'} <span className="font-extrabold">{info.nextDose} ({info.dueDateStr || 'Segera'})</span>
+                                </p>
                               </div>
+                              <p className={`text-[11px] font-semibold italic ${lacakSubFilter === 'dropout' ? 'text-red-700' : 'text-amber-700'}`}>
+                                {lacakSubFilter === 'dropout'
+                                  ? <>⚙️ Aturan: Minimal selang waktu ke {info.nextDose} telah lewat. Mohon hubungi bidan segera.</>
+                                  : <>⏳ Estimasi: Sisa {info.daysRemaining} Hari lagi sebelum tenggat jatuh tempo optimal.</>}
+                              </p>
                             </div>
-                          );
-                        })
-                      );
+                            <div className="flex items-center space-x-2 justify-end shrink-0 pt-2 md:pt-0">
+                              <button onClick={() => requestWhatsappModal(p)} className={`p-2 rounded-lg text-white font-bold text-xs flex items-center space-x-1 cursor-pointer transition-colors ${lacakSubFilter === 'dropout' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-amber-600 hover:bg-amber-700'}`}>
+                                <Send size={13} /><span>{lacakSubFilter === 'dropout' ? 'Kirim Imbauan WA' : 'Kirim Pengingat WA'}</span>
+                              </button>
+                              <button onClick={() => openEditForm(p)} className="p-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 font-bold text-xs flex items-center cursor-pointer transition-colors">
+                                Perbarui Rekam
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      });
                     })()}
                   </div>
                 </div>
