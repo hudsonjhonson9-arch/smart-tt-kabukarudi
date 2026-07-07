@@ -2257,7 +2257,7 @@ function requestWhatsAppExpress(nomorHp, pesan) {
                       title="Ekspor PDF"
                     >
                       <FileDown size={13} />
-                      <span className="hidden sm:inline">EXPORT PDF</span>
+                      <span className="hidden sm:inline">EXPORT LAPORAN PDF</span>
                     </button>
                     
                     <button 
