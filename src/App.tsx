@@ -1418,42 +1418,55 @@ export default function App() {
     return '-';
   };
 
+  const getTindakLanjut = (p: Patient): string => {
+    if (getCurrentTtDose(p) === 'Lengkap') return '-';
+    const nxt = getNextTtDate(p);
+    if (nxt === '-' || nxt === 'Lengkap') return '-';
+    const parts = nxt.split(' ');
+    if (parts.length < 3) return '-';
+    const monthMap: Record<string, number> = { 'Jan':0,'Feb':1,'Mar':2,'Apr':3,'Mei':4,'Jun':5,'Jul':6,'Agu':7,'Sep':8,'Okt':9,'Nov':10,'Des':11 };
+    const d = new Date(parseInt(parts[2]), monthMap[parts[1]] || 0, parseInt(parts[0]));
+    if (isNaN(d.getTime())) return '-';
+    if (d >= new Date()) return '-';
+    return getCurrentTtDose(p) === 'Belum' ? 'Kunjungan Rumah' : 'Pengulangan Dosis';
+  };
+
   const exportLacarPdf = () => {
     const doc = new jsPDF('l', 'mm', 'a4');
     const rows = patients.filter(p => VILLAGES.includes(p.desa)).map(p => [
       p.namaLengkapIbu, p.nikIbu, getAgeFromNik(p.nikIbu), p.desa,
       p.hpht || '-', p.gravida ?? '-', p.paritas ?? '-', p.abortus ?? '-',
-      getCurrentTtDose(p), getLastTtDate(p), getNextTtDate(p), p.keterangan || '-'
+      getCurrentTtDose(p), getLastTtDate(p), getNextTtDate(p), getTindakLanjut(p), p.keterangan || '-'
     ]);
     autoTable(doc, {
-      head: [['Nama Ibu Hamil', 'NIK', 'Umur', 'Desa', 'HPHT', 'G', 'P', 'A', 'Status TT', 'TT Terakhir', 'TT Berikutnya', 'Keterangan']],
+      head: [['Nama Ibu Hamil', 'NIK', 'Umur', 'Desa', 'HPHT', 'G', 'P', 'A', 'Status TT', 'TT Terakhir', 'TT Berikutnya', 'Tindak Lanjut', 'Keterangan']],
       body: rows,
       theme: 'grid',
       styles: { fontSize: 7, cellPadding: 1.5 },
       headStyles: { fillColor: [13, 148, 136], fontSize: 7, fontStyle: 'bold' },
       columnStyles: {
-        0: { cellWidth: 40 }, 1: { cellWidth: 30 }, 2: { cellWidth: 10 }, 3: { cellWidth: 22 },
-        4: { cellWidth: 18 }, 5: { cellWidth: 6 }, 6: { cellWidth: 6 }, 7: { cellWidth: 6 },
-        8: { cellWidth: 14 }, 9: { cellWidth: 18 }, 10: { cellWidth: 20 }, 11: { cellWidth: 22 }
+        0: { cellWidth: 36 }, 1: { cellWidth: 28 }, 2: { cellWidth: 9 }, 3: { cellWidth: 20 },
+        4: { cellWidth: 16 }, 5: { cellWidth: 6 }, 6: { cellWidth: 6 }, 7: { cellWidth: 6 },
+        8: { cellWidth: 13 }, 9: { cellWidth: 16 }, 10: { cellWidth: 18 }, 11: { cellWidth: 20 }, 12: { cellWidth: 20 }
       },
       margin: { top: 10, right: 5, bottom: 10, left: 5 },
     });
-    doc.save('Lembar_Lacar_TT.pdf');
+    doc.save('Lembar_Lacak_TT.pdf');
   };
 
   const exportLacarExcel = () => {
     const rows = patients.filter(p => VILLAGES.includes(p.desa)).map(p => [
       p.namaLengkapIbu, p.nikIbu, getAgeFromNik(p.nikIbu), p.desa,
       p.hpht || '-', p.gravida ?? '-', p.paritas ?? '-', p.abortus ?? '-',
-      getCurrentTtDose(p), getLastTtDate(p), getNextTtDate(p), p.keterangan || '-'
+      getCurrentTtDose(p), getLastTtDate(p), getNextTtDate(p), getTindakLanjut(p), p.keterangan || '-'
     ]);
-    let html = `<table><tr><th>Nama Ibu Hamil</th><th>NIK</th><th>Umur</th><th>Desa</th><th>HPHT</th><th>G</th><th>P</th><th>A</th><th>Status TT</th><th>TT Terakhir</th><th>TT Berikutnya</th><th>Keterangan</th></tr>`;
+    let html = `<table><tr><th>Nama Ibu Hamil</th><th>NIK</th><th>Umur</th><th>Desa</th><th>HPHT</th><th>G</th><th>P</th><th>A</th><th>Status TT</th><th>TT Terakhir</th><th>TT Berikutnya</th><th>Tindak Lanjut</th><th>Keterangan</th></tr>`;
     rows.forEach(r => { html += '<tr>' + r.map(c => `<td>${c}</td>`).join('') + '</tr>'; });
     html += '</table>';
     const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = 'Lembar_Lacar_TT.xls'; a.click();
+    a.href = url; a.download = 'Lembar_Lacak_TT.xls'; a.click();
     URL.revokeObjectURL(url);
   };
 
@@ -1749,7 +1762,7 @@ function requestWhatsAppExpress(nomorHp, pesan) {
                 className={`px-6 py-3.5 flex items-center gap-4 cursor-pointer transition-all ${activeTab === 'lacar' ? 'bg-sky-600/10 border-l-4 border-sky-500 text-sky-400 font-extrabold' : 'hover:bg-slate-800/60 hover:text-slate-200 text-slate-400'}`}
               >
                 <Clipboard size={18} />
-                <span className="font-semibold text-xs uppercase tracking-wider">Lembar Lacar</span>
+                <span className="font-semibold text-xs uppercase tracking-wider">Lembar Lacak</span>
               </li>
               <li 
                 onClick={() => setActiveTab('interval')}
@@ -2089,7 +2102,7 @@ function requestWhatsAppExpress(nomorHp, pesan) {
                   {activeTab === 'lacak' && 'Daftar Drop Out & Tindak Lanjut'}
                   {activeTab === 'interval' && 'Interval Edukasi Selang Dosis'}
                   {activeTab === 'accounts' && 'Kelola Akun Petugas Kesehatan Desa'}
-                  {activeTab === 'lacar' && 'Lembar Lacar Imunisasi TT'}
+                  {activeTab === 'lacar' && 'Lembar Lacak Imunisasi TT'}
                 </h2>
                 <p className="text-[10px] text-slate-400 hidden sm:block font-bold tracking-wider truncate">
                   UPTD PUSKESMAS KABUKARUDI • SUMBA BARAT, NTT
@@ -3356,10 +3369,10 @@ function requestWhatsAppExpress(nomorHp, pesan) {
             <div className="space-y-6 animate-fadeIn">
               <div className="bg-white rounded-2xl p-5 shadow-xs border border-slate-150 space-y-2">
                 <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
-                  Lembar Lacar Imunisasi TT
+                  Lembar Lacak Imunisasi TT
                 </h3>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  Lembar lacar (Laporan Cakupan) Imunisasi TT — menampilkan status imunisasi seluruh ibu hamil terdaftar di wilayah Puskesmas Kabukarudi beserta jadwal TT berikutnya.
+                  Lembar lacak Imunisasi TT — menampilkan status imunisasi seluruh ibu hamil terdaftar di wilayah Puskesmas Kabukarudi beserta jadwal TT berikutnya.
                 </p>
               </div>
 
@@ -3387,6 +3400,7 @@ function requestWhatsAppExpress(nomorHp, pesan) {
                       <th className="p-2 font-bold whitespace-nowrap">Status TT</th>
                       <th className="p-2 font-bold whitespace-nowrap">TT Terakhir</th>
                       <th className="p-2 font-bold whitespace-nowrap">TT Berikutnya</th>
+                      <th className="p-2 font-bold whitespace-nowrap">Tindak Lanjut</th>
                       <th className="p-2 font-bold whitespace-nowrap">Keterangan</th>
                     </tr>
                   </thead>
@@ -3410,6 +3424,14 @@ function requestWhatsAppExpress(nomorHp, pesan) {
                         </td>
                         <td className="p-2 text-slate-600 whitespace-nowrap">{getLastTtDate(p)}</td>
                         <td className="p-2 text-slate-600 whitespace-nowrap">{getNextTtDate(p)}</td>
+                        <td className="p-2 whitespace-nowrap">
+                          {(() => {
+                            const tl = getTindakLanjut(p);
+                            return tl === '-' ? <span className="text-slate-400">-</span> :
+                              tl === 'Kunjungan Rumah' ? <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">🏠 Kunjungan Rumah</span> :
+                              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">💉 Pengulangan Dosis</span>;
+                          })()}
+                        </td>
                         <td className="p-2 text-slate-600 text-[11px]">{p.keterangan || '-'}</td>
                       </tr>
                     ))}
@@ -3452,7 +3474,7 @@ function requestWhatsAppExpress(nomorHp, pesan) {
               className={`flex flex-col items-center flex-1 justify-center py-3 gap-1 transition-all cursor-pointer min-h-[60px] ${activeTab === 'lacar' ? 'text-sky-600' : 'text-slate-400'}`}
             >
               <Clipboard size={22} strokeWidth={activeTab === 'lacar' ? 2.5 : 1.8} />
-              <span className={`text-[11px] font-bold leading-none ${activeTab === 'lacar' ? 'text-sky-600' : 'text-slate-400'}`}>Lacar</span>
+              <span className={`text-[11px] font-bold leading-none ${activeTab === 'lacar' ? 'text-sky-600' : 'text-slate-400'}`}>Lacak</span>
               {activeTab === 'lacar' && <span className="absolute bottom-0 w-8 h-0.5 bg-sky-500 rounded-full" />}
             </button>
             <button 
