@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   ShieldAlert, 
   Users, 
@@ -32,7 +32,8 @@ import {
   ArrowRight,
   RefreshCw,
   Trash,
-  Trash2
+  Trash2,
+  Upload
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -345,6 +346,8 @@ export default function App() {
   const [lacakSubFilter, setLacakSubFilter] = useState<'dropout' | 'mendekati' | 'all'>('all');
   const [selectedDesaFilter, setSelectedDesaFilter] = useState('Semua');
   
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // WhatsApp State
   const [whatsappLogs, setWhatsappLogs] = useState<WhatsappLog[]>([]);
   const [activeWhatsappModal, setActiveWhatsappModal] = useState<Patient | null>(null);
@@ -386,7 +389,8 @@ export default function App() {
   const [formParitas, setFormParitas] = useState<number | ''>('');
   const [formAbortus, setFormAbortus] = useState<number | ''>('');
   const [formJarakKelahiran, setFormJarakKelahiran] = useState('');
-  
+  const [nikMatch, setNikMatch] = useState<'found' | 'not_found' | ''>('');
+
   // Dynamic fields for multicheck dosage records
   const [dosageTt1, setDosageTt1] = useState(false);
   const [dateTt1, setDateTt1] = useState('');
@@ -449,6 +453,36 @@ export default function App() {
     };
   }, []);
 
+  // Debounced NIK lookup — isi otomatis form jika NIK sudah ada
+  useEffect(() => {
+    if (!isFormOpen) return;
+    const timer = setTimeout(() => {
+      if (formNik.length !== 16) { setNikMatch(''); return; }
+      const match = patients.find(p => p.nikIbu === formNik);
+      if (match) {
+        setNikMatch('found');
+        setEditingPatient(match);
+        setFormNama(match.namaLengkapIbu);
+        setFormDesa(match.desa);
+        setFormHp(match.nomorHp);
+        setFormHpht(match.hpht || '');
+        setFormJarakKelahiran(match.jarakKelahiran || '');
+        setFormGravida(match.gravida !== undefined ? match.gravida : '');
+        setFormParitas(match.paritas !== undefined ? match.paritas : '');
+        setFormAbortus(match.abortus !== undefined ? match.abortus : '');
+        setDosageTt1(match.tt1); setDateTt1(match.tanggalTt1 || '');
+        setDosageTt2(match.tt2); setDateTt2(match.tanggalTt2 || '');
+        setDosageTt3(match.tt3); setDateTt3(match.tanggalTt3 || '');
+        setDosageTt4(match.tt4); setDateTt4(match.tanggalTt4 || '');
+        setDosageTt5(match.tt5); setDateTt5(match.tanggalTt5 || '');
+      } else {
+        setNikMatch('not_found');
+        setEditingPatient(null);
+      }
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [formNik, isFormOpen, patients]);
+
   // Save patients — localStorage dulu, Supabase jika online
   const updatePatientsInStorage = (newList: Patient[]) => {
     setPatients(newList);
@@ -470,6 +504,76 @@ export default function App() {
       savePatients(updated);
       return updated;
     });
+  };
+
+  const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = new Uint8Array(evt.target?.result as ArrayBuffer);
+        const wb = XLSX.read(data, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows: Record<string, string>[] = XLSX.utils.sheet_to_json(ws);
+        let updated = [...patients];
+        for (const row of rows) {
+          const gpa = (row['GPA'] || row['gpa'] || '').toString().match(/G(\d+)\s*P(\d+)\s*A(\d+)/i);
+          const gravida = gpa ? parseInt(gpa[1]) : undefined;
+          const paritas = gpa ? parseInt(gpa[2]) : undefined;
+          const abortus = gpa ? parseInt(gpa[3]) : undefined;
+          const getBool = (key: string) => {
+            const v = row[key]?.toString().trim().toLowerCase();
+            if (v === 'true' || v === '1' || v === 'ya' || v === 'sudah') return true;
+            if (v === 'false' || v === '0' || v === 'tidak' || v === 'belum') return false;
+            return false;
+          };
+          const getDate = (ttKey: string, dateKey: string) => {
+            if (getBool(ttKey)) {
+              const v = row[dateKey];
+              if (v) {
+                const d = new Date((v as any).toISOString ? (v as Date) : v);
+                return isNaN(d.getTime()) ? v.toString() : d.toISOString().split('T')[0];
+              }
+            }
+            return '';
+          };
+          const p: Patient = {
+            no: nextNo++,
+            tanggalRegistrasi: row['TANGGAL REGISTRASI']?.toString() || new Date().toISOString().split('T')[0],
+            nikIbu: row['NIK IBU']?.toString().trim() || '',
+            namaLengkapIbu: row['NAMA LENGKAP IBU']?.toString().trim() || '',
+            desa: row['DESA']?.toString().trim() || '',
+            nomorHp: row['NOMOR HP']?.toString().trim() || '',
+            hpht: row['HPHT']?.toString().trim() || '',
+            tt1: getBool('TT1'), tanggalTt1: getDate('TT1', 'TANGGAL TT1'),
+            tt2: getBool('TT2'), tanggalTt2: getDate('TT2', 'TANGGAL TT2'),
+            tt3: getBool('TT3'), tanggalTt3: getDate('TT3', 'TANGGAL TT3'),
+            tt4: getBool('TT4'), tanggalTt4: getDate('TT4', 'TANGGAL TT4'),
+            tt5: getBool('TT5'), tanggalTt5: getDate('TT5', 'TANGGAL TT5'),
+            keterangan: row['KETERANGAN']?.toString().trim() || '',
+            gravida, paritas, abortus,
+            jarakKelahiran: row['JARAK KELAHIRAN']?.toString().trim() || 'Anak Pertama',
+          };
+          if (!p.namaLengkapIbu || !p.nikIbu) continue;
+          const existing = updated.findIndex(x => x.nikIbu === p.nikIbu);
+          if (existing >= 0) {
+            updated[existing] = { ...updated[existing], ...p, no: updated[existing].no };
+          } else {
+            p.no = updated.length > 0 ? Math.max(...updated.map(x => x.no)) + 1 : 1;
+            updated.push(p);
+          }
+        }
+        if (updated.length === patients.length) return;
+        setPatients(updated);
+        savePatients(updated);
+        setPendingSync(hasPendingSync());
+      } catch (err) {
+        console.error('Import gagal:', err);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = '';
   };
 
   // Delete a single patient record
@@ -942,6 +1046,7 @@ export default function App() {
     setDosageTt5(false); setDateTt5('');
     
     setEditingPatient(null);
+    setNikMatch('');
   };
 
   // Open Add Patient Form
@@ -990,33 +1095,47 @@ export default function App() {
         return p;
       });
     } else {
-      // Create new mode
-      const nextNo = patients.length > 0 ? Math.max(...patients.map(p => p.no)) + 1 : 1;
-      const newPatient: Patient = {
-        no: nextNo,
-        tanggalRegistrasi: formTanggalRegistrasi,
-        nikIbu: formNik,
-        namaLengkapIbu: formNama,
-        desa: matchedDesa,
-        nomorHp: formHp,
-        hpht: formHpht,
-        tt1: dosageTt1,
-        tanggalTt1: dosageTt1 ? dateTt1 : '',
-        tt2: dosageTt2,
-        tanggalTt2: dosageTt2 ? dateTt2 : '',
-        tt3: dosageTt3,
-        tanggalTt3: dosageTt3 ? dateTt3 : '',
-        tt4: dosageTt4,
-        tanggalTt4: dosageTt4 ? dateTt4 : '',
-        tt5: dosageTt5,
-        tanggalTt5: dosageTt5 ? dateTt5 : '',
-        keterangan: calculateKeteranganStatus(draftPatient),
-        gravida: formGravida === '' ? undefined : Number(formGravida),
-        paritas: formParitas === '' ? undefined : Number(formParitas),
-        abortus: formAbortus === '' ? undefined : Number(formAbortus),
-        jarakKelahiran: formJarakKelahiran,
-      };
-      updatedList.push(newPatient);
+      // Create or update by NIK
+      const existing = patients.find(p => p.nikIbu === formNik);
+      if (existing) {
+        updatedList = patients.map(p => {
+          if (p.nikIbu !== formNik) return p;
+          return {
+            ...p,
+            ...draftPatient,
+            no: p.no,
+            tanggalRegistrasi: p.tanggalRegistrasi,
+            keterangan: calculateKeteranganStatus(draftPatient),
+          } as Patient;
+        });
+      } else {
+        const nextNo = patients.length > 0 ? Math.max(...patients.map(p => p.no)) + 1 : 1;
+        const newPatient: Patient = {
+          no: nextNo,
+          tanggalRegistrasi: formTanggalRegistrasi,
+          nikIbu: formNik,
+          namaLengkapIbu: formNama,
+          desa: matchedDesa,
+          nomorHp: formHp,
+          hpht: formHpht,
+          tt1: dosageTt1,
+          tanggalTt1: dosageTt1 ? dateTt1 : '',
+          tt2: dosageTt2,
+          tanggalTt2: dosageTt2 ? dateTt2 : '',
+          tt3: dosageTt3,
+          tanggalTt3: dosageTt3 ? dateTt3 : '',
+          tt4: dosageTt4,
+          tanggalTt4: dosageTt4 ? dateTt4 : '',
+          tt5: dosageTt5,
+          tanggalTt5: dosageTt5 ? dateTt5 : '',
+          keterangan: calculateKeteranganStatus(draftPatient),
+          gravida: formGravida === '' ? undefined : Number(formGravida),
+          paritas: formParitas === '' ? undefined : Number(formParitas),
+          abortus: formAbortus === '' ? undefined : Number(formAbortus),
+          jarakKelahiran: formJarakKelahiran,
+        };
+        updatedList.push(newPatient);
+      }
     }
 
     updatePatientsInStorage(updatedList);
@@ -1189,22 +1308,22 @@ export default function App() {
       head: [['No', 'Nama Ibu Hamil', 'NIK', 'Desa', 'G-P-A', 'Jarak L.', 'No HP', 'TT1', 'TT2', 'TT3', 'TT4', 'TT5', 'Keterangan']],
       body: tableBody,
       theme: 'grid',
-      headStyles: { fillColor: [13, 148, 136] }, // Teal color
-      styles: { fontSize: 7 },
+      headStyles: { fillColor: [13, 148, 136], fontSize: 7.5 },
+      styles: { fontSize: 7.5, cellPadding: 2 },
       columnStyles: {
-        0: { cellWidth: 6 },
-        1: { cellWidth: 25 },
-        2: { cellWidth: 23 },
-        3: { cellWidth: 16 },
-        4: { cellWidth: 14 },
-        5: { cellWidth: 14 },
-        6: { cellWidth: 18 },
-        7: { cellWidth: 8 },
-        8: { cellWidth: 8 },
-        9: { cellWidth: 8 },
-        10: { cellWidth: 8 },
-        11: { cellWidth: 8 },
-        12: { cellWidth: 24 }
+        0: { cellWidth: 7 },
+        1: { cellWidth: 28 },
+        2: { cellWidth: 26 },
+        3: { cellWidth: 18 },
+        4: { cellWidth: 15 },
+        5: { cellWidth: 15 },
+        6: { cellWidth: 20 },
+        7: { cellWidth: 9 },
+        8: { cellWidth: 9 },
+        9: { cellWidth: 9 },
+        10: { cellWidth: 9 },
+        11: { cellWidth: 9 },
+        12: { cellWidth: 26 }
       }
     });
 
@@ -1246,48 +1365,48 @@ export default function App() {
       doc.setTextColor(30, 41, 59);
       
       // Section A: IDENTITAS IBU HAMIL
-      doc.setFontSize(9.5);
+      doc.setFontSize(11);
       doc.setFont('Helvetica', 'bold');
       doc.text('A. IDENTITAS IBU HAMIL', 15, 38);
       doc.setDrawColor(226, 232, 240); // Slate-200
       doc.line(15, 41, 195, 41);
       
       doc.setFont('Helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.text('Nama Lengkap Ibu', 20, 48);
-      doc.text(':', 60, 48);
+      doc.setFontSize(10);
+      doc.text('Nama Lengkap Ibu', 20, 49);
+      doc.text(':', 62, 49);
       doc.setFont('Helvetica', 'bold');
-      doc.text(p.namaLengkapIbu, 65, 48);
+      doc.text(p.namaLengkapIbu, 67, 49);
       doc.setFont('Helvetica', 'normal');
       
-      doc.text('Nomor NIK Ibu', 20, 55);
-      doc.text(':', 60, 55);
+      doc.text('Nomor NIK Ibu', 20, 57);
+      doc.text(':', 62, 57);
       doc.setFont('Helvetica', 'bold');
-      doc.text(p.nikIbu, 65, 55);
+      doc.text(p.nikIbu, 67, 57);
       doc.setFont('Helvetica', 'normal');
       
-      doc.text('Desa Domisili', 20, 62);
-      doc.text(':', 60, 62);
-      doc.text(`Desa ${p.desa}`, 65, 62);
+      doc.text('Desa Domisili', 20, 65);
+      doc.text(':', 62, 65);
+      doc.text(`Desa ${p.desa}`, 67, 65);
       
-      doc.text('No. HP / WhatsApp', 20, 69);
-      doc.text(':', 60, 69);
-      doc.text(p.nomorHp || 'Tidak Ada / -', 65, 69);
+      doc.text('No. HP / WhatsApp', 20, 73);
+      doc.text(':', 62, 73);
+      doc.text(p.nomorHp || 'Tidak Ada / -', 67, 73);
       
-      doc.text('Tanggal Registrasi', 20, 76);
-      doc.text(':', 60, 76);
-      doc.text(p.tanggalRegistrasi ? new Date(p.tanggalRegistrasi).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-', 65, 76);
+      doc.text('Tanggal Registrasi', 20, 81);
+      doc.text(':', 62, 81);
+      doc.text(p.tanggalRegistrasi ? new Date(p.tanggalRegistrasi).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-', 67, 81);
       
       // Section B: INFORMASI KLINIS & OBSTETRI
-      doc.setFontSize(9.5);
+      doc.setFontSize(11);
       doc.setFont('Helvetica', 'bold');
-      doc.text('B. INFORMASI KLINIS & OBSTETRI', 15, 87);
-      doc.line(15, 90, 195, 90);
+      doc.text('B. INFORMASI KLINIS & OBSTETRI', 15, 93);
+      doc.line(15, 96, 195, 96);
       
       doc.setFont('Helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.text(`Status Kehamilan (GPA) :  G${p.gravida ?? '-'} P${p.paritas ?? '-'} A${p.abortus ?? '-'}`, 20, 97);
-      doc.text(`Jarak Kelahiran Terakhir :  ${p.jarakKelahiran || 'Anak Pertama / -'}`, 20, 104);
+      doc.setFontSize(10);
+      doc.text(`Status Kehamilan (GPA) :  G${p.gravida ?? '-'} P${p.paritas ?? '-'} A${p.abortus ?? '-'}`, 20, 104);
+      doc.text(`Jarak Kelahiran Terakhir :  ${p.jarakKelahiran || 'Anak Pertama / -'}`, 20, 112);
       
       const hplStr = (() => {
         if (!p.hpht) return '-';
@@ -1297,14 +1416,14 @@ export default function App() {
         d.setMonth(d.getMonth() + 9);
         return d.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
       })();
-      doc.text(`Hari Pertama Haid Terakhir (HPHT):  ${p.hpht || '-'}`, 20, 111);
-      doc.text(`Taksiran Persalinan (Estimasi HPL):  ${hplStr}`, 20, 118);
+      doc.text(`Hari Pertama Haid Terakhir (HPHT):  ${p.hpht || '-'}`, 20, 120);
+      doc.text(`Taksiran Persalinan (Estimasi HPL):  ${hplStr}`, 20, 128);
       
       // Section C: CATATAN RIWAYAT SUNTIKAN IMUNISASI TT
-      doc.setFontSize(9.5);
+      doc.setFontSize(11);
       doc.setFont('Helvetica', 'bold');
-      doc.text('C. CATATAN DOSIS IMUNISASI TETANUS TOXOID', 15, 130);
-      doc.line(15, 133, 195, 133);
+      doc.text('C. CATATAN DOSIS IMUNISASI TETANUS TOXOID', 15, 142);
+      doc.line(15, 145, 195, 145);
       
       const cardTableBody = [
         ['Dosis TT1', p.tt1 ? 'SUDAH SUNTIK' : 'BELUM IMUNISASI', p.tanggalTt1 || '-', 'Langkah pertama pendaftaran rekam hamil'],
@@ -1315,18 +1434,18 @@ export default function App() {
       ];
 
       autoTable(doc, {
-        startY: 137,
+        startY: 149,
         head: [['Dosis Vaksin', 'Status Verifikasi', 'Tanggal Pemberian', 'Standar Selang Interval Minimal']],
         body: cardTableBody,
         theme: 'grid',
         margin: { left: 15, right: 15 },
-        headStyles: { fillColor: [71, 85, 105], fontSize: 8 }, // Cool Slate-600 color
-        styles: { fontSize: 8, cellPadding: 2.5 },
+        headStyles: { fillColor: [71, 85, 105], fontSize: 9 },
+        styles: { fontSize: 9, cellPadding: 3 },
         columnStyles: {
-          0: { cellWidth: 30, fontStyle: 'bold' },
-          1: { cellWidth: 40, fontStyle: 'bold' },
-          2: { cellWidth: 40 },
-          3: { cellWidth: 70 }
+          0: { cellWidth: 32, fontStyle: 'bold' },
+          1: { cellWidth: 42, fontStyle: 'bold' },
+          2: { cellWidth: 42 },
+          3: { cellWidth: 64 }
         },
         didParseCell: (data) => {
           if (data.row.index >= 0 && data.column.index === 1) {
@@ -1341,24 +1460,22 @@ export default function App() {
       });
 
       // Section D: KESIMPULAN CAKUPAN & TINDAK LANJUT
-      const tableFinalY = (doc as any).lastAutoTable.finalY || 195;
+      const tableFinalY = (doc as any).lastAutoTable.finalY || 210;
       
-      doc.setFontSize(9.5);
+      doc.setFontSize(11);
       doc.setFont('Helvetica', 'bold');
-      doc.text('D. KESIMPULAN CAKUPAN & TINDAK LANJUT', 15, tableFinalY + 10);
-      doc.line(15, tableFinalY + 13, 195, tableFinalY + 13);
+      doc.text('D. KESIMPULAN CAKUPAN & TINDAK LANJUT', 15, tableFinalY + 12);
+      doc.line(15, tableFinalY + 15, 195, tableFinalY + 15);
 
       doc.setFont('Helvetica', 'normal');
-      doc.setFontSize(9);
+      doc.setFontSize(10);
       const pStatus = calculateKeteranganStatus(p);
-      doc.text('Status Cakupan Pemantauan:', 20, tableFinalY + 20);
+      doc.text('Status Cakupan Pemantauan:', 20, tableFinalY + 23);
       
-      // Status text
       doc.setFont('Helvetica', 'bold');
-      doc.text(pStatus, 72, tableFinalY + 20);
+      doc.text(pStatus, 72, tableFinalY + 23);
       doc.setFont('Helvetica', 'normal');
 
-      // Set medical advice
       let recommendation = 'Tindak lanjut rutin. Ibu Hamil disarankan mengunjungi faskes terdekat untuk melengkapi cakupan proteksi TT.';
       if (pStatus === 'Lengkap (T5)') {
         recommendation = 'LENGKAP (T5 booster): Perlindungan optimal hingga 25 Tahun / Seumur Hidup terhadap bahaya Tetanus Neonatorum berhasil ditegakkan!';
@@ -1368,20 +1485,19 @@ export default function App() {
         recommendation = 'DALAM PEMANTAUAN AKTIF: Jadwal imunisasi berikutnya sedang berjalan lancar. Pastikan kontrol sesuai dengan masa tenggang interval.';
       }
 
-      doc.text('Rekomendasi Medis Bidan:', 20, tableFinalY + 27);
+      doc.text('Rekomendasi Medis Bidan:', 20, tableFinalY + 31);
       doc.setFont('Helvetica', 'oblique');
-      doc.text(recommendation, 65, tableFinalY + 27, { maxWidth: 125 });
+      doc.text(recommendation, 67, tableFinalY + 31, { maxWidth: 125 });
       doc.setFont('Helvetica', 'normal');
 
-      // Footer brand & sign fields
       doc.setFont('Helvetica', 'normal');
-      doc.setFontSize(8.5);
+      doc.setFontSize(9);
       doc.setTextColor(100, 116, 139);
-      doc.text(`Cetak Kartu: ${new Date().toLocaleDateString('id-ID')} | UPTD Puskesmas Kabukarudi Sumba Barat`, 15, tableFinalY + 45);
+      doc.text(`Cetak Kartu: ${new Date().toLocaleDateString('id-ID')} | UPTD Puskesmas Kabukarudi Sumba Barat`, 15, tableFinalY + 52);
       
       doc.setTextColor(30, 41, 59);
-      doc.text('Petugas Bidan Koordinator,', 145, tableFinalY + 45);
-      doc.text('( ______________________ )', 145, tableFinalY + 62);
+      doc.text('Petugas Bidan Koordinator,', 145, tableFinalY + 52);
+      doc.text('( ______________________ )', 145, tableFinalY + 72);
     });
 
     doc.save(`Laporan_SMART_TT_Kabukarudi_${activeDesaStr.replace(/\s+/g, '_')}.pdf`);
@@ -1461,12 +1577,12 @@ export default function App() {
       head: [['Nama Ibu Hamil', 'NIK', 'Umur', 'Desa', 'HPHT', 'G', 'P', 'A', 'Status TT', 'TT Terakhir', 'TT Berikutnya', 'Tindak Lanjut', 'Keterangan']],
       body: rows,
       theme: 'grid',
-      styles: { fontSize: 7, cellPadding: 1.5 },
-      headStyles: { fillColor: [13, 148, 136], fontSize: 7, fontStyle: 'bold' },
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: [13, 148, 136], fontSize: 9, fontStyle: 'bold' },
       columnStyles: {
-        0: { cellWidth: 36 }, 1: { cellWidth: 28 }, 2: { cellWidth: 9 }, 3: { cellWidth: 20 },
-        4: { cellWidth: 16 }, 5: { cellWidth: 6 }, 6: { cellWidth: 6 }, 7: { cellWidth: 6 },
-        8: { cellWidth: 13 }, 9: { cellWidth: 16 }, 10: { cellWidth: 18 }, 11: { cellWidth: 20 }, 12: { cellWidth: 20 }
+        0: { cellWidth: 46 }, 1: { cellWidth: 38 }, 2: { cellWidth: 13 }, 3: { cellWidth: 26 },
+        4: { cellWidth: 22 }, 5: { cellWidth: 9 }, 6: { cellWidth: 9 }, 7: { cellWidth: 9 },
+        8: { cellWidth: 18 }, 9: { cellWidth: 22 }, 10: { cellWidth: 24 }, 11: { cellWidth: 26 }, 12: { cellWidth: 26 }
       },
       margin: { top: 10, right: 5, bottom: 10, left: 5 },
     });
@@ -2520,6 +2636,17 @@ function requestWhatsAppExpress(nomorHp, pesan) {
                         ))}
                       </select>
 
+                      <input ref={fileInputRef} type="file" accept=".xlsx,.xls" onChange={handleImportExcel} hidden />
+
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 hover:text-emerald-800 border border-emerald-200 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                        title="Import Excel"
+                      >
+                        <Upload size={13} />
+                        <span>IMPORT EXCEL</span>
+                      </button>
+
                       <button
                         onClick={handleClearAllPatients}
                         className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-800 border border-rose-200 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
@@ -3304,6 +3431,19 @@ function requestWhatsAppExpress(nomorHp, pesan) {
                               </p>
                             </div>
                             <div className="flex items-center space-x-2 justify-end shrink-0 pt-2 md:pt-0">
+                              <select
+                                value={p.tindakLanjut || ''}
+                                onChange={e => handleTindakLanjutChange(p.no, e.target.value)}
+                                className={`text-[11px] font-bold px-1.5 py-1.5 rounded-lg border cursor-pointer outline-none ${
+                                  p.tindakLanjut === 'Kunjungan Rumah' ? 'bg-blue-50 border-blue-200 text-blue-700' :
+                                  p.tindakLanjut === 'Pengulangan Dosis' ? 'bg-purple-50 border-purple-200 text-purple-700' :
+                                  'bg-white border-slate-200 text-slate-400'
+                                }`}
+                              >
+                                <option value="">Tindak Lanjut</option>
+                                <option value="Kunjungan Rumah">🏠 Kunjungan Rumah</option>
+                                <option value="Pengulangan Dosis">💉 Pengulangan Dosis</option>
+                              </select>
                               <button onClick={() => requestWhatsappModal(p)} className={`p-2 rounded-lg text-white font-bold text-xs flex items-center space-x-1 cursor-pointer transition-colors ${lacakSubFilter === 'dropout' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-amber-600 hover:bg-amber-700'}`}>
                                 <Send size={13} /><span>{lacakSubFilter === 'dropout' ? 'Kirim Imbauan WA' : 'Kirim Pengingat WA'}</span>
                               </button>
@@ -3632,16 +3772,22 @@ function requestWhatsAppExpress(nomorHp, pesan) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">NIK Ibu Hamil (16 Digit)</label>
-                  <input 
-                    type="text"
-                    required
-                    maxLength={16}
-                    minLength={16}
-                    value={formNik}
-                    onChange={(e) => setFormNik(e.target.value)}
-                    placeholder="Contoh: 531201xxxxxxxxxx"
-                    className="w-full p-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800"
-                  />
+                  <div className="relative">
+                    <input 
+                      type="text"
+                      required
+                      maxLength={16}
+                      minLength={16}
+                      value={formNik}
+                      onChange={(e) => { setFormNik(e.target.value); setNikMatch(''); }}
+                      placeholder="Contoh: 531201xxxxxxxxxx"
+                      className="w-full p-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800 pr-7"
+                      style={{ borderColor: nikMatch === 'found' ? '#059669' : nikMatch === 'not_found' ? '#dc2626' : undefined }}
+                    />
+                    {nikMatch === 'found' && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-emerald-600 text-xs font-bold" title="Data ditemukan">✓</span>}
+                    {nikMatch === 'not_found' && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-rose-600 text-xs font-bold" title="NIK baru">✗</span>}
+                  </div>
+                  {nikMatch === 'found' && <p className="text-[10px] text-emerald-600 mt-0.5">Data ditemukan, form terisi otomatis. Edit lalu simpan untuk memperbarui.</p>}
                 </div>
 
                 <div>
