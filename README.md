@@ -1,20 +1,41 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# SMART TT — Pemantauan Imunisasi Tetanus Toxoid Ibu Hamil
 
-# Run and deploy your AI Studio app
+Sistem pemantauan imunisasi TT ibu hamil untuk **UPTD Puskesmas Kabukarudi, Sumba Barat, NTT**. Berjalan sepenuhnya di sisi klien dengan arsitektur offline-first.
 
-This contains everything you need to run your app locally.
+## Stack
 
-View your app in AI Studio: https://ai.studio/apps/b9d4f0d3-5471-4d8f-a558-2c1b3753ac9e
+React 19 · TypeScript · Vite 6 · Tailwind CSS 4 · Supabase · localStorage
 
-## Run Locally
+## Cara Pakai
 
-**Prerequisites:**  Node.js
+```bash
+npm install
+npm run dev        # http://localhost:3000
+npm run build      # build produksi ke dist/
+```
 
+## Variabel Lingkungan
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Buat `.env` atau `.env.local`:
+
+```env
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+```
+
+Tanpa Supabase, aplikasi tetap berjalan dengan **12 akun default** dan data di **localStorage**.
+
+## Struktur
+
+| File | Isi |
+|------|-----|
+| `src/App.tsx` | Seluruh UI (monolithic) |
+| `src/lib/db.ts` | Offline-first data + auth + sync |
+| `src/lib/supabase.ts` | Supabase client |
+| `RANCANGAN.md` | Dokumentasi rancangan |
+| `PANDUAN.md` | Panduan penggunaan |
+
+## Supabase CORS
+
+Jika di-deploy ke domain kustom, tambahkan domain ke:
+**Supabase Dashboard → Authentication → Settings → Allowed Sites**
