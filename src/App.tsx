@@ -1583,7 +1583,7 @@ function requestWhatsAppExpress(nomorHp, pesan) {
       {user && (
         <header className="md:hidden h-14 bg-slate-900 text-white px-4 flex items-center justify-between z-40 shrink-0 select-none">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-sky-500 rounded-lg flex items-center justify-center font-extrabold text-sm text-white">S</div>
+              <img src="/logo_smart_tt.png" alt="SMART TT" className="w-8 h-8 object-contain" />
             <div>
               <h1 className="font-black text-xs tracking-wider">SMART TT</h1>
               <p className="text-[8px] text-slate-400">UPTD KABUKARUDI</p>
@@ -1619,7 +1619,7 @@ function requestWhatsAppExpress(nomorHp, pesan) {
         <aside className="w-64 bg-slate-900 flex flex-col text-white shrink-0 hidden md:flex h-full select-none border-r border-slate-950">
           <div className="p-6 border-b border-slate-800">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-sky-500 rounded-xl flex items-center justify-center font-black text-xl text-white shadow-md shadow-sky-500/20">S</div>
+              <img src="/logo_smart_tt.png" alt="SMART TT" className="w-10 h-10 object-contain" />
               <div>
                 <h1 className="text-sm font-black leading-tight tracking-wider uppercase text-slate-100">SMART TT</h1>
                 <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">KABUKARUDI, SUMBA BARAT</p>
@@ -1718,11 +1718,12 @@ function requestWhatsAppExpress(nomorHp, pesan) {
             
             <div className="w-full max-w-lg mx-auto text-center space-y-8 relative z-10">
               
+              {/* Top Header Banner */}
+              <img src="/top_header.png" alt="" className="w-full max-w-md mx-auto rounded-2xl shadow-lg mb-2" />
+
               {/* Logo & Title */}
               <div className="space-y-3">
-                <div className="bg-white/10 backdrop-blur-sm w-20 h-20 rounded-3xl flex items-center justify-center mx-auto shadow-lg border border-white/10">
-                  <span className="text-4xl font-black text-white">TT</span>
-                </div>
+                <img src="/logo_smart_tt.png" alt="SMART TT" className="w-20 h-20 object-contain mx-auto" />
                 <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight drop-shadow-sm">
                   SMART TT
                 </h1>
@@ -1899,12 +1900,10 @@ function requestWhatsAppExpress(nomorHp, pesan) {
             
             <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-6 md:p-8 space-y-6 relative z-10 border border-teal-100">
               <div className="text-center space-y-2">
-                <div className="bg-sky-50 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto text-sky-600 mb-2 shadow-sm">
-                  <MapPin size={34} />
-                </div>
+                <img src="/logo_smart_tt.png" alt="SMART TT" className="w-16 h-16 object-contain mx-auto mb-2" />
                 <h2 className="text-2xl font-black text-slate-800 tracking-tight">SMART TT KABUKARUDI</h2>
                 <p className="text-xs font-medium text-slate-500 max-w-xs mx-auto">
-                  Pemantauan Tetanus Toxoid Ibu Hamil UPTD Puskesmas Kabukarudi, Sumba Barat
+                  Sistem Pemantauan Tetanus Toxoid Ibu Hamil UPTD Puskesmas Kabukarudi, Sumba Barat
                 </p>
               </div>
 
@@ -1969,6 +1968,12 @@ function requestWhatsAppExpress(nomorHp, pesan) {
               <div className="pt-2 text-center text-[11px] text-slate-400">
                 SMART Tetanus Toxoid Monitoring
               </div>
+              <button
+                onClick={() => setShowLandingPage(true)}
+                className="w-full text-center text-[11px] text-slate-400 hover:text-teal-600 font-medium transition-colors cursor-pointer"
+              >
+                ← Kembali ke Beranda
+              </button>
             </div>
           </main>
         )
