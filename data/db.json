@@ -1,0 +1,18 @@
+{
+  "accounts": [
+    { "username": "puskesmas", "password": "adminpuskesmas", "role": "Puskesmas", "desa": "Semua", "namaLengkap": "Admin Puskesmas Kabukarudi" },
+    { "username": "bidan_sodana", "password": "desa123", "role": "Desa", "desa": "Pustu Sodana", "namaLengkap": "Sitti Aminah (Bidan Pustu Sodana)" },
+    { "username": "bidan_patialabawa", "password": "desa123", "role": "Desa", "desa": "Pustu Patiala Bawa", "namaLengkap": "Maria S. (Bidan Patiala Bawa)" },
+    { "username": "bidan_bodohulla", "password": "desa123", "role": "Desa", "desa": "Poskesdes Bodohulla", "namaLengkap": "Yuliana K. (Bidan Bodohulla)" },
+    { "username": "bidan_watukarere", "password": "desa123", "role": "Desa", "desa": "Poskesdes Watukarere", "namaLengkap": "Marlina D. (Bidan Watukarere)" },
+    { "username": "bidan_ringurara", "password": "desa123", "role": "Desa", "desa": "Poskesdes Ringu Rara", "namaLengkap": "Anastasia R. (Bidan Ringu Rara)" },
+    { "username": "bidan_palamoko", "password": "desa123", "role": "Desa", "desa": "Polindes Palamoko", "namaLengkap": "Elizabeth T. (Bidan Palamoko)" },
+    { "username": "bidan_welibo", "password": "desa123", "role": "Desa", "desa": "Polindes Welibo", "namaLengkap": "Christina M. (Bidan Welibo)" },
+    { "username": "bidan_rajaka", "password": "desa123", "role": "Desa", "desa": "Polindes Rajaka", "namaLengkap": "Ningsih P. (Bidan Rajaka)" },
+    { "username": "bidan_laboyadete", "password": "desa123", "role": "Desa", "desa": "Polindes Laboya Dete", "namaLengkap": "Agustina H. (Bidan Laboya Dete)" },
+    { "username": "bidan_laboyabawa", "password": "desa123", "role": "Desa", "desa": "Polindes Laboya Bawa", "namaLengkap": "Fitriani W. (Bidan Laboya Bawa)" },
+    { "username": "bidan_kabukarudi", "password": "desa123", "role": "Desa", "desa": "Kabukarudi", "namaLengkap": "Debora Y. (Bidan Kabukarudi)" }
+  ],
+  "patients": [],
+  "whatsappLogs": []
+}

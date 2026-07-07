@@ -1,0 +1,6 @@
+{
+  "name": "SMART TT Puskesmas Kabukarudi",
+  "description": "Aplikasi pemantauan dan tracking imunisasi Tetanus Toxoid (TT) Ibu Hamil di Puskesmas Kabukarudi, Kabupaten Sumba Barat. Dilengkapi deteksi drop-out, ekspor laporan, dan pengingat WhatsApp.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
