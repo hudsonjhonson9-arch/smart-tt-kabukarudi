@@ -503,6 +503,7 @@ export default function App() {
         const riwayat = p.riwayatTindakLanjut ? JSON.parse(p.riwayatTindakLanjut) : [];
         if (value === 'Pengulangan Dosis') {
           riwayat.push({ tgl: now, tindakan: value });
+          return { ...p, tindakLanjut: value, riwayatTindakLanjut: JSON.stringify(riwayat), tt1: false, tanggalTt1: '', tt2: false, tanggalTt2: '', tt3: false, tanggalTt3: '', tt4: false, tanggalTt4: '', tt5: false, tanggalTt5: '', keterangan: '' };
         }
         return { ...p, tindakLanjut: value, riwayatTindakLanjut: JSON.stringify(riwayat) };
       });
