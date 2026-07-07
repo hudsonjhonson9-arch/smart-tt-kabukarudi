@@ -1308,11 +1308,11 @@ export default function App() {
       `G${p.gravida ?? '-'} P${p.paritas ?? '-'} A${p.abortus ?? '-'}`,
       p.jarakKelahiran || '-',
       p.nomorHp || '-',
-      p.tt1 ? 'Ya ✅' : 'Blm ❌',
-      p.tt2 ? 'Ya ✅' : 'Blm ❌',
-      p.tt3 ? 'Ya ✅' : 'Blm ❌',
-      p.tt4 ? 'Ya ✅' : 'Blm ❌',
-      p.tt5 ? 'Ya ✅' : 'Blm ❌',
+      p.tt1 ? '✓' : '✘',
+      p.tt2 ? '✓' : '✘',
+      p.tt3 ? '✓' : '✘',
+      p.tt4 ? '✓' : '✘',
+      p.tt5 ? '✓' : '✘',
       calculateKeteranganStatus(p)
     ]);
 
