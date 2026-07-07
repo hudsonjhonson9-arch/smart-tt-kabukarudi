@@ -339,7 +339,7 @@ export default function App() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('Semua');
-  const [lacakSubFilter, setLacakSubFilter] = useState<'dropout' | 'mendekati'>('dropout');
+  const [lacakSubFilter, setLacakSubFilter] = useState<'dropout' | 'mendekati' | 'all'>('all');
   const [selectedDesaFilter, setSelectedDesaFilter] = useState('Semua');
   
   // WhatsApp State
@@ -1746,23 +1746,16 @@ function requestWhatsAppExpress(nomorHp, pesan) {
                 <span className="font-semibold text-xs uppercase tracking-wider">Input Data TT</span>
               </li>
               <li 
-                onClick={() => setActiveTab('lacak')}
-                className={`px-6 py-3.5 flex items-center gap-4 cursor-pointer transition-all relative ${activeTab === 'lacak' ? 'bg-sky-600/10 border-l-4 border-sky-500 text-sky-400 font-extrabold' : 'hover:bg-slate-800/60 hover:text-slate-200 text-slate-400'}`}
+                onClick={() => setActiveTab('lacar')}
+                className={`px-6 py-3.5 flex items-center gap-4 cursor-pointer transition-all relative ${activeTab === 'lacar' ? 'bg-sky-600/10 border-l-4 border-sky-500 text-sky-400 font-extrabold' : 'hover:bg-slate-800/60 hover:text-slate-200 text-slate-400'}`}
               >
-                <ShieldAlert size={18} className={stats.dropOut > 0 ? 'text-red-400' : ''} />
-                <span className={`font-semibold text-xs uppercase tracking-wider flex items-center justify-between w-full ${stats.dropOut > 0 ? 'text-red-400' : ''}`}>
-                  <span>Lacak Drop Out</span>
-                  {stats.dropOut > 0 && (
+                <ShieldAlert size={18} className={activeTab === 'lacar' ? 'text-sky-400' : (stats.dropOut > 0 ? 'text-red-400' : 'text-slate-400')} />
+                <span className={`font-semibold text-xs uppercase tracking-wider flex items-center justify-between w-full ${activeTab === 'lacar' ? 'text-sky-400' : (stats.dropOut > 0 ? 'text-red-400' : 'text-slate-400')}`}>
+                  <span>Lacak & Lembar Lacak</span>
+                  {stats.dropOut > 0 && activeTab !== 'lacar' && (
                     <span className="px-2 py-0.5 text-[10px] bg-red-600 text-white font-extrabold rounded-full animate-pulse">{stats.dropOut}</span>
                   )}
                 </span>
-              </li>
-              <li 
-                onClick={() => setActiveTab('lacar')}
-                className={`px-6 py-3.5 flex items-center gap-4 cursor-pointer transition-all ${activeTab === 'lacar' ? 'bg-sky-600/10 border-l-4 border-sky-500 text-sky-400 font-extrabold' : 'hover:bg-slate-800/60 hover:text-slate-200 text-slate-400'}`}
-              >
-                <Clipboard size={18} />
-                <span className="font-semibold text-xs uppercase tracking-wider">Lembar Lacak</span>
               </li>
               <li 
                 onClick={() => setActiveTab('interval')}
@@ -2099,10 +2092,9 @@ function requestWhatsAppExpress(nomorHp, pesan) {
                 <h2 className="text-sm md:text-base font-black text-slate-850 tracking-tight truncate">
                   {activeTab === 'beranda' && 'Ringkasan Capaian Wilayah'}
                   {activeTab === 'input' && 'Sistem Registrasi & Master Data TT'}
-                  {activeTab === 'lacak' && 'Daftar Drop Out & Tindak Lanjut'}
                   {activeTab === 'interval' && 'Interval Edukasi Selang Dosis'}
                   {activeTab === 'accounts' && 'Kelola Akun Petugas Kesehatan Desa'}
-                  {activeTab === 'lacar' && 'Lembar Lacak Imunisasi TT'}
+                  {activeTab === 'lacar' && 'Lacak & Lembar Lacak Imunisasi TT'}
                 </h2>
                 <p className="text-[10px] text-slate-400 hidden sm:block font-bold tracking-wider truncate">
                   UPTD PUSKESMAS KABUKARUDI • SUMBA BARAT, NTT
@@ -3366,78 +3358,180 @@ function requestWhatsAppExpress(nomorHp, pesan) {
           )}
 
           {activeTab === 'lacar' && (
-            <div className="space-y-6 animate-fadeIn">
-              <div className="bg-white rounded-2xl p-5 shadow-xs border border-slate-150 space-y-2">
-                <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
-                  Lembar Lacak Imunisasi TT
-                </h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Lembar lacak Imunisasi TT — menampilkan status imunisasi seluruh ibu hamil terdaftar di wilayah Puskesmas Kabukarudi beserta jadwal TT berikutnya.
-                </p>
+            <div className="space-y-4 animate-fadeIn">
+              <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 flex flex-col sm:flex-row items-start gap-4">
+                <div className="p-3 bg-teal-50 text-teal-700 rounded-full shrink-0">
+                  <ShieldAlert size={24} />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="text-sm font-bold text-slate-800">Pusat Lacak & Lembar Lacak Imunisasi TT</h4>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Pantau status imunisasi seluruh ibu hamil — lacak kasus <strong>Drop Out</strong>, <strong>Mendekati Jadwal</strong>, atau lihat seluruh data dalam <strong>Lembar Lacak</strong>.
+                  </p>
+                </div>
               </div>
 
-              <div className="flex items-center gap-2 flex-wrap">
-                <button onClick={exportLacarPdf} className="text-xs font-bold bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl transition-all flex items-center gap-2">
-                  Export PDF (Landscape A4)
+              <div className="flex bg-slate-100 p-1 rounded-xl max-w-md border border-slate-200">
+                <button onClick={() => setLacakSubFilter('all')} className={`flex-1 py-1.5 text-center text-xs font-extrabold rounded-lg cursor-pointer transition-all ${lacakSubFilter === 'all' ? 'bg-white text-teal-700 shadow-xs' : 'text-slate-500 hover:text-slate-700'}`}>
+                  Semua Data ({patients.filter(p => VILLAGES.includes(p.desa)).length})
                 </button>
-                <button onClick={exportLacarExcel} className="text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl transition-all flex items-center gap-2">
-                  Export Excel
+                <button onClick={() => setLacakSubFilter('dropout')} className={`flex-1 py-1.5 text-center text-xs font-extrabold rounded-lg cursor-pointer transition-all ${lacakSubFilter === 'dropout' ? 'bg-white text-rose-700 shadow-xs' : 'text-slate-500 hover:text-slate-700'}`}>
+                  🚨 Drop Out ({filteredPatients.filter(p => calculateKeteranganStatus(p) === 'Drop Out').length})
+                </button>
+                <button onClick={() => setLacakSubFilter('mendekati')} className={`flex-1 py-1.5 text-center text-xs font-extrabold rounded-lg cursor-pointer transition-all ${lacakSubFilter === 'mendekati' ? 'bg-white text-amber-700 shadow-xs' : 'text-slate-500 hover:text-slate-700'}`}>
+                  ⏳ Mendekati ({filteredPatients.filter(p => calculateKeteranganStatus(p) === 'Mendekati Jadwal').length})
                 </button>
               </div>
 
-              <div className="bg-white rounded-2xl shadow-xs border border-slate-150 overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="bg-teal-600 text-white text-left">
-                      <th className="p-2 font-bold whitespace-nowrap">Nama Ibu Hamil</th>
-                      <th className="p-2 font-bold whitespace-nowrap">NIK</th>
-                      <th className="p-2 font-bold whitespace-nowrap">Umur</th>
-                      <th className="p-2 font-bold whitespace-nowrap">Desa</th>
-                      <th className="p-2 font-bold whitespace-nowrap">HPHT</th>
-                      <th className="p-2 font-bold whitespace-nowrap">G</th>
-                      <th className="p-2 font-bold whitespace-nowrap">P</th>
-                      <th className="p-2 font-bold whitespace-nowrap">A</th>
-                      <th className="p-2 font-bold whitespace-nowrap">Status TT</th>
-                      <th className="p-2 font-bold whitespace-nowrap">TT Terakhir</th>
-                      <th className="p-2 font-bold whitespace-nowrap">TT Berikutnya</th>
-                      <th className="p-2 font-bold whitespace-nowrap">Tindak Lanjut</th>
-                      <th className="p-2 font-bold whitespace-nowrap">Keterangan</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {patients.filter(p => VILLAGES.includes(p.desa)).map((p, i) => (
-                      <tr key={p.no} className={i % 2 === 0 ? 'bg-slate-50' : 'bg-white'}>
-                        <td className="p-2 font-semibold text-slate-800 whitespace-nowrap">{p.namaLengkapIbu}</td>
-                        <td className="p-2 text-slate-600 whitespace-nowrap">{p.nikIbu}</td>
-                        <td className="p-2 text-slate-600 whitespace-nowrap">{getAgeFromNik(p.nikIbu)}</td>
-                        <td className="p-2 text-slate-600 whitespace-nowrap">{p.desa}</td>
-                        <td className="p-2 text-slate-600 whitespace-nowrap">{p.hpht || '-'}</td>
-                        <td className="p-2 text-slate-600">{p.gravida ?? '-'}</td>
-                        <td className="p-2 text-slate-600">{p.paritas ?? '-'}</td>
-                        <td className="p-2 text-slate-600">{p.abortus ?? '-'}</td>
-                        <td className="p-2 whitespace-nowrap">
-                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                            getCurrentTtDose(p) === 'Belum' ? 'bg-red-100 text-red-700' :
-                            getCurrentTtDose(p) === 'TT5' ? 'bg-emerald-100 text-emerald-700' :
-                            'bg-amber-100 text-amber-700'
-                          }`}>{getCurrentTtDose(p)}</span>
-                        </td>
-                        <td className="p-2 text-slate-600 whitespace-nowrap">{getLastTtDate(p)}</td>
-                        <td className="p-2 text-slate-600 whitespace-nowrap">{getNextTtDate(p)}</td>
-                        <td className="p-2 whitespace-nowrap">
-                          {(() => {
-                            const tl = getTindakLanjut(p);
-                            return tl === '-' ? <span className="text-slate-400">-</span> :
-                              tl === 'Kunjungan Rumah' ? <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">🏠 Kunjungan Rumah</span> :
-                              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">💉 Pengulangan Dosis</span>;
-                          })()}
-                        </td>
-                        <td className="p-2 text-slate-600 text-[11px]">{p.keterangan || '-'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              {lacakSubFilter === 'dropout' || lacakSubFilter === 'mendekati' ? (
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+                  <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                      {lacakSubFilter === 'dropout' ? (
+                        <><span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span><span>Terdeteksi {filteredPatients.filter(p => calculateKeteranganStatus(p) === 'Drop Out').length} Kasus Drop Out (Telat Dosis)</span></>
+                      ) : (
+                        <><span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block animate-pulse"></span><span>Terdeteksi {filteredPatients.filter(p => calculateKeteranganStatus(p) === 'Mendekati Jadwal').length} Ibu Hamil Mendekati Jadwal TT</span></>
+                      )}
+                    </h4>
+                    <button onClick={() => setShowWaLog(!showWaLog)} className="text-xs text-teal-600 hover:underline font-bold cursor-pointer">
+                      {showWaLog ? 'Tutup Log' : 'Lihat Log WA'}
+                    </button>
+                  </div>
+                  {showWaLog && (
+                    <div className="bg-slate-50 border-b border-slate-200 p-4 space-y-2 text-xs">
+                      <p className="font-bold text-slate-700">Riwayat Pengiriman WhatsApp:</p>
+                      <div className="max-h-[150px] overflow-y-auto space-y-1.5">
+                        {whatsappLogs.length === 0 ? (
+                          <p className="text-slate-400 italic">Belum ada pesan terkirim pada sesi ini.</p>
+                        ) : (
+                          whatsappLogs.map((log) => (
+                            <div key={log.id} className="p-2 bg-white rounded border border-slate-200 text-[11px] flex justify-between items-center">
+                              <div><p className="font-bold">{log.namaLengkapIbu} ({log.nomorHp}) - {log.desa}</p><p className="text-slate-500 italic">"{log.pesan.slice(0, 75)}..."</p></div>
+                              <div className="text-right shrink-0 ml-3"><span className="text-emerald-600 font-extrabold block">✓ {log.status}</span><span className="text-slate-400 text-[9px]">{log.tanggalKirim}</span></div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  <div className="divide-y divide-slate-100">
+                    {(() => {
+                      const targetStatus = lacakSubFilter === 'dropout' ? 'Drop Out' : 'Mendekati Jadwal';
+                      const targetList = filteredPatients.filter(p => calculateKeteranganStatus(p) === targetStatus);
+                      return targetList.length === 0 ? (
+                        <div className="p-10 text-center text-slate-400">
+                          <CheckCircle size={36} className="text-emerald-500 mx-auto mb-2" />
+                          <p className="font-bold text-xs uppercase tracking-wide">Semua Terpantau Aman</p>
+                          <p className="text-xs pt-1">{lacakSubFilter === 'dropout' ? 'Tidak ada ibu hamil dengan status Drop Out.' : 'Tidak ada ibu hamil mendekati jadwal dalam 14 hari.'}</p>
+                        </div>
+                      ) : (
+                        targetList.map((p) => {
+                          const nextDose = getNextTtDate(p);
+                          const lastDose = getLastTtDate(p);
+                          const nextScheduled = getCurrentTtDose(p) === 'Belum' ? 'TT1' : !p.tt1 ? 'TT1' : !p.tt2 ? 'TT2' : !p.tt3 ? 'TT3' : !p.tt4 ? 'TT4' : 'TT5';
+                          const prevAntigen = getCurrentTtDose(p);
+                          const prevDate = lastDose;
+                          const info = (() => {
+                            const now = new Date();
+                            const dueDate = new Date(p.tanggalTt1 || now);
+                            if (nextScheduled === 'TT2' && p.tanggalTt1) dueDate.setDate(new Date(p.tanggalTt1).getDate() + 28);
+                            else if (nextScheduled === 'TT3' && p.tanggalTt2) dueDate.setDate(new Date(p.tanggalTt2).getDate() + 180);
+                            else if (nextScheduled === 'TT4' && p.tanggalTt3) dueDate.setDate(new Date(p.tanggalTt3).getDate() + 365);
+                            else if (nextScheduled === 'TT5' && p.tanggalTt4) dueDate.setDate(new Date(p.tanggalTt4).getDate() + 365);
+                            const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                            return { dueDateStr: dueDate.toLocaleDateString('id-ID'), daysRemaining: diffDays };
+                          })();
+                          return (
+                            <div key={p.no} className="p-4 flex items-start gap-3 hover:bg-slate-50 transition-colors">
+                              <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-extrabold text-xs shrink-0 ${lacakSubFilter === 'dropout' ? 'bg-rose-500' : 'bg-amber-500'}`}>
+                                {lacakSubFilter === 'dropout' ? '!' : '⏳'}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div>
+                                    <p className="font-bold text-slate-800 text-sm">{p.namaLengkapIbu}</p>
+                                    <p className="text-[11px] text-slate-400">{p.desa} — HP: {p.nomorHp || '-'}</p>
+                                  </div>
+                                  <div className="text-right shrink-0">
+                                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${lacakSubFilter === 'dropout' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>
+                                      {prevAntigen} → {nextScheduled}
+                                    </span>
+                                    <p className="text-[10px] text-slate-400 mt-0.5">{lacakSubFilter === 'dropout' ? `Telat ${Math.abs(info.daysRemaining)} hari` : `${info.daysRemaining} hari lagi`}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2 mt-1.5">
+                                  <button onClick={() => { setActiveWhatsappModal(p); setCustomMsg(`Yth. Ibu ${p.namaLengkapIbu} di Desa ${p.desa}. Kami dari Puskesmas Kabukarudi mengingatkan bahwa ${lacakSubFilter === 'dropout' ? 'waktu imunisasi Anda telah lewat' : 'jadwal imunisasi Anda akan tiba'}. Mohon segera ke bidan terdekat. Terima kasih.`); }} className="text-[11px] font-bold bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1 rounded-lg transition-colors cursor-pointer">
+                                    📲 Kirim WA
+                                  </button>
+                                  <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${getTindakLanjut(p) === 'Kunjungan Rumah' ? 'bg-blue-100 text-blue-700' : getTindakLanjut(p) !== '-' ? 'bg-purple-100 text-purple-700' : ''}`}>
+                                    {getTindakLanjut(p)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      );
+                    })()}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button onClick={exportLacarPdf} className="text-xs font-bold bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl transition-all flex items-center gap-2">
+                      Export PDF (Landscape A4)
+                    </button>
+                    <button onClick={exportLacarExcel} className="text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl transition-all flex items-center gap-2">
+                      Export Excel
+                    </button>
+                  </div>
+
+                  <div className="bg-white rounded-2xl shadow-xs border border-slate-150 overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="bg-teal-600 text-white text-left">
+                          <th className="p-2 font-bold whitespace-nowrap">Nama Ibu Hamil</th>
+                          <th className="p-2 font-bold whitespace-nowrap">NIK</th>
+                          <th className="p-2 font-bold whitespace-nowrap">Umur</th>
+                          <th className="p-2 font-bold whitespace-nowrap">Desa</th>
+                          <th className="p-2 font-bold whitespace-nowrap">HPHT</th>
+                          <th className="p-2 font-bold whitespace-nowrap">G</th>
+                          <th className="p-2 font-bold whitespace-nowrap">P</th>
+                          <th className="p-2 font-bold whitespace-nowrap">A</th>
+                          <th className="p-2 font-bold whitespace-nowrap">Status TT</th>
+                          <th className="p-2 font-bold whitespace-nowrap">TT Terakhir</th>
+                          <th className="p-2 font-bold whitespace-nowrap">TT Berikutnya</th>
+                          <th className="p-2 font-bold whitespace-nowrap">Tindak Lanjut</th>
+                          <th className="p-2 font-bold whitespace-nowrap">Keterangan</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {patients.filter(p => VILLAGES.includes(p.desa)).map((p, i) => (
+                          <tr key={p.no} className={i % 2 === 0 ? 'bg-slate-50' : 'bg-white'}>
+                            <td className="p-2 font-semibold text-slate-800 whitespace-nowrap">{p.namaLengkapIbu}</td>
+                            <td className="p-2 text-slate-600 whitespace-nowrap">{p.nikIbu}</td>
+                            <td className="p-2 text-slate-600 whitespace-nowrap">{getAgeFromNik(p.nikIbu)}</td>
+                            <td className="p-2 text-slate-600 whitespace-nowrap">{p.desa}</td>
+                            <td className="p-2 text-slate-600 whitespace-nowrap">{p.hpht || '-'}</td>
+                            <td className="p-2 text-slate-600">{p.gravida ?? '-'}</td>
+                            <td className="p-2 text-slate-600">{p.paritas ?? '-'}</td>
+                            <td className="p-2 text-slate-600">{p.abortus ?? '-'}</td>
+                            <td className="p-2 whitespace-nowrap">
+                              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${getCurrentTtDose(p) === 'Belum' ? 'bg-red-100 text-red-700' : getCurrentTtDose(p) === 'TT5' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{getCurrentTtDose(p)}</span>
+                            </td>
+                            <td className="p-2 text-slate-600 whitespace-nowrap">{getLastTtDate(p)}</td>
+                            <td className="p-2 text-slate-600 whitespace-nowrap">{getNextTtDate(p)}</td>
+                            <td className="p-2 whitespace-nowrap">
+                              {(() => { const tl = getTindakLanjut(p); return tl === '-' ? <span className="text-slate-400">-</span> : tl === 'Kunjungan Rumah' ? <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">🏠 Kunjungan Rumah</span> : <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">💉 Pengulangan Dosis</span>; })()}
+                            </td>
+                            <td className="p-2 text-slate-600 text-[11px]">{p.keterangan || '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -3471,24 +3565,16 @@ function requestWhatsAppExpress(nomorHp, pesan) {
             </button>
             <button 
               onClick={() => setActiveTab('lacar')}
-              className={`flex flex-col items-center flex-1 justify-center py-3 gap-1 transition-all cursor-pointer min-h-[60px] ${activeTab === 'lacar' ? 'text-sky-600' : 'text-slate-400'}`}
-            >
-              <Clipboard size={22} strokeWidth={activeTab === 'lacar' ? 2.5 : 1.8} />
-              <span className={`text-[11px] font-bold leading-none ${activeTab === 'lacar' ? 'text-sky-600' : 'text-slate-400'}`}>Lacak</span>
-              {activeTab === 'lacar' && <span className="absolute bottom-0 w-8 h-0.5 bg-sky-500 rounded-full" />}
-            </button>
-            <button 
-              onClick={() => setActiveTab('lacak')}
-              className={`flex flex-col items-center flex-1 justify-center py-3 gap-1 relative transition-all cursor-pointer min-h-[60px] ${activeTab === 'lacak' ? 'text-sky-600' : 'text-slate-400'}`}
+              className={`flex flex-col items-center flex-1 justify-center py-3 gap-1 relative transition-all cursor-pointer min-h-[60px] ${activeTab === 'lacar' ? 'text-sky-600' : 'text-slate-400'}`}
             >
               <div className="relative">
-                <ShieldAlert size={22} strokeWidth={activeTab === 'lacak' ? 2.5 : 1.8} className={stats.dropOut > 0 && activeTab !== 'lacak' ? 'text-red-500' : ''} />
+                <ShieldAlert size={22} strokeWidth={activeTab === 'lacar' ? 2.5 : 1.8} className={activeTab !== 'lacar' && stats.dropOut > 0 ? 'text-red-500' : ''} />
                 {stats.dropOut > 0 && (
                   <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-white" />
                 )}
               </div>
-              <span className={`text-[11px] font-bold leading-none ${activeTab === 'lacak' ? 'text-sky-600' : stats.dropOut > 0 ? 'text-red-500' : 'text-slate-400'}`}>Lacak</span>
-              {activeTab === 'lacak' && <span className="absolute bottom-0 w-8 h-0.5 bg-sky-500 rounded-full" />}
+              <span className={`text-[11px] font-bold leading-none ${activeTab === 'lacar' ? 'text-sky-600' : stats.dropOut > 0 ? 'text-red-500' : 'text-slate-400'}`}>Lacak</span>
+              {activeTab === 'lacar' && <span className="absolute bottom-0 w-8 h-0.5 bg-sky-500 rounded-full" />}
             </button>
             <button 
               onClick={() => setActiveTab('interval')}
