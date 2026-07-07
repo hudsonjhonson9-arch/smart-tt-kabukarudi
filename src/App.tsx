@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 import {
   loadPatients,
   savePatients,
@@ -102,6 +103,8 @@ interface Patient {
   paritas?: number;
   abortus?: number;
   jarakKelahiran?: string;
+  tindakLanjut?: string;
+  riwayatTindakLanjut?: string;
 }
 
 interface WhatsappLog {
@@ -451,6 +454,22 @@ export default function App() {
     setPatients(newList);
     savePatients(newList);
     setPendingSync(hasPendingSync());
+  };
+
+  const handleTindakLanjutChange = (no: number, value: string) => {
+    const now = new Date().toISOString().split('T')[0];
+    setPatients(prev => {
+      const updated = prev.map(p => {
+        if (p.no !== no) return p;
+        const riwayat = p.riwayatTindakLanjut ? JSON.parse(p.riwayatTindakLanjut) : [];
+        if (value === 'Pengulangan Dosis') {
+          riwayat.push({ tgl: now, tindakan: value });
+        }
+        return { ...p, tindakLanjut: value, riwayatTindakLanjut: JSON.stringify(riwayat) };
+      });
+      savePatients(updated);
+      return updated;
+    });
   };
 
   // Delete a single patient record
@@ -1436,7 +1455,7 @@ export default function App() {
     const rows = patients.filter(p => VILLAGES.includes(p.desa)).map(p => [
       p.namaLengkapIbu, p.nikIbu, getAgeFromNik(p.nikIbu), p.desa,
       p.hpht || '-', p.gravida ?? '-', p.paritas ?? '-', p.abortus ?? '-',
-      getCurrentTtDose(p), getLastTtDate(p), getNextTtDate(p), getTindakLanjut(p), p.keterangan || '-'
+      getCurrentTtDose(p), getLastTtDate(p), getNextTtDate(p), p.tindakLanjut || '-', p.keterangan || '-'
     ]);
     autoTable(doc, {
       head: [['Nama Ibu Hamil', 'NIK', 'Umur', 'Desa', 'HPHT', 'G', 'P', 'A', 'Status TT', 'TT Terakhir', 'TT Berikutnya', 'Tindak Lanjut', 'Keterangan']],
@@ -1455,19 +1474,25 @@ export default function App() {
   };
 
   const exportLacarExcel = () => {
-    const rows = patients.filter(p => VILLAGES.includes(p.desa)).map(p => [
-      p.namaLengkapIbu, p.nikIbu, getAgeFromNik(p.nikIbu), p.desa,
-      p.hpht || '-', p.gravida ?? '-', p.paritas ?? '-', p.abortus ?? '-',
-      getCurrentTtDose(p), getLastTtDate(p), getNextTtDate(p), getTindakLanjut(p), p.keterangan || '-'
-    ]);
-    let html = `<table><tr><th>Nama Ibu Hamil</th><th>NIK</th><th>Umur</th><th>Desa</th><th>HPHT</th><th>G</th><th>P</th><th>A</th><th>Status TT</th><th>TT Terakhir</th><th>TT Berikutnya</th><th>Tindak Lanjut</th><th>Keterangan</th></tr>`;
-    rows.forEach(r => { html += '<tr>' + r.map(c => `<td>${c}</td>`).join('') + '</tr>'; });
-    html += '</table>';
-    const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'Lembar_Lacak_TT.xls'; a.click();
-    URL.revokeObjectURL(url);
+    const rows = patients.filter(p => VILLAGES.includes(p.desa)).map(p => ({
+      'Nama Ibu Hamil': p.namaLengkapIbu,
+      'NIK': p.nikIbu,
+      'Umur': getAgeFromNik(p.nikIbu),
+      'Desa': p.desa,
+      'HPHT': p.hpht || '-',
+      'G': p.gravida ?? '-',
+      'P': p.paritas ?? '-',
+      'A': p.abortus ?? '-',
+      'Status TT': getCurrentTtDose(p),
+      'TT Terakhir': getLastTtDate(p),
+      'TT Berikutnya': getNextTtDate(p),
+      'Tindak Lanjut': p.tindakLanjut || '-',
+      'Keterangan': p.keterangan || '-',
+    }));
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, 'Lembar Lacak');
+    XLSX.writeFile(wb, 'Lembar_Lacak_TT.xlsx');
   };
 
   // Mock auto-copy script helpers
@@ -3463,8 +3488,8 @@ function requestWhatsAppExpress(nomorHp, pesan) {
                                   <button onClick={() => { setActiveWhatsappModal(p); setCustomMsg(`Yth. Ibu ${p.namaLengkapIbu} di Desa ${p.desa}. Kami dari Puskesmas Kabukarudi mengingatkan bahwa ${lacakSubFilter === 'dropout' ? 'waktu imunisasi Anda telah lewat' : 'jadwal imunisasi Anda akan tiba'}. Mohon segera ke bidan terdekat. Terima kasih.`); }} className="text-[11px] font-bold bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1 rounded-lg transition-colors cursor-pointer">
                                     📲 Kirim WA
                                   </button>
-                                  <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${getTindakLanjut(p) === 'Kunjungan Rumah' ? 'bg-blue-100 text-blue-700' : getTindakLanjut(p) !== '-' ? 'bg-purple-100 text-purple-700' : ''}`}>
-                                    {getTindakLanjut(p)}
+                                  <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${(p.tindakLanjut || '') === 'Kunjungan Rumah' ? 'bg-blue-100 text-blue-700' : (p.tindakLanjut || '') === 'Pengulangan Dosis' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-500'}`}>
+                                    {p.tindakLanjut || '-'}
                                   </span>
                                 </div>
                               </div>
@@ -3522,7 +3547,19 @@ function requestWhatsAppExpress(nomorHp, pesan) {
                             <td className="p-2 text-slate-600 whitespace-nowrap">{getLastTtDate(p)}</td>
                             <td className="p-2 text-slate-600 whitespace-nowrap">{getNextTtDate(p)}</td>
                             <td className="p-2 whitespace-nowrap">
-                              {(() => { const tl = getTindakLanjut(p); return tl === '-' ? <span className="text-slate-400">-</span> : tl === 'Kunjungan Rumah' ? <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">🏠 Kunjungan Rumah</span> : <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">💉 Pengulangan Dosis</span>; })()}
+                              <select
+                                value={p.tindakLanjut || ''}
+                                onChange={e => handleTindakLanjutChange(p.no, e.target.value)}
+                                className={`text-[11px] font-bold px-1 py-0.5 rounded-lg border cursor-pointer outline-none ${
+                                  p.tindakLanjut === 'Kunjungan Rumah' ? 'bg-blue-50 border-blue-200 text-blue-700' :
+                                  p.tindakLanjut === 'Pengulangan Dosis' ? 'bg-purple-50 border-purple-200 text-purple-700' :
+                                  'bg-white border-slate-200 text-slate-400'
+                                }`}
+                              >
+                                <option value="">-</option>
+                                <option value="Kunjungan Rumah">🏠 Kunjungan Rumah</option>
+                                <option value="Pengulangan Dosis">💉 Pengulangan Dosis</option>
+                              </select>
                             </td>
                             <td className="p-2 text-slate-600 text-[11px]">{p.keterangan || '-'}</td>
                           </tr>

@@ -39,6 +39,8 @@ export interface Patient {
   paritas?: number;
   abortus?: number;
   jarakKelahiran?: string;
+  tindakLanjut?: string;
+  riwayatTindakLanjut?: string;
 }
 
 export interface Account {
@@ -268,6 +270,8 @@ function dbToPatient(row: any): Patient {
     paritas:          row.paritas,
     abortus:          row.abortus,
     jarakKelahiran:   row.jarak_kelahiran ?? 'Anak Pertama',
+    tindakLanjut:     row.tindak_lanjut ?? '',
+    riwayatTindakLanjut: row.riwayat_tindak_lanjut ?? '',
   };
 }
 
@@ -290,6 +294,8 @@ function patientToDb(p: Patient) {
     paritas:             p.paritas ?? 0,
     abortus:             p.abortus ?? 0,
     jarak_kelahiran:     p.jarakKelahiran ?? 'Anak Pertama',
+    tindak_lanjut:       p.tindakLanjut ?? '',
+    riwayat_tindak_lanjut: p.riwayatTindakLanjut ?? '',
   };
 }
 
