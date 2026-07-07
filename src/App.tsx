@@ -1315,21 +1315,21 @@ export default function App() {
       body: tableBody,
       theme: 'grid',
       headStyles: { fillColor: [13, 148, 136], fontSize: 7.5 },
-      styles: { fontSize: 7.5, cellPadding: 2 },
+      styles: { fontSize: 7.5, cellPadding: 1.5, overflow: 'linebreak' },
       columnStyles: {
-        0: { cellWidth: 7 },
-        1: { cellWidth: 28 },
-        2: { cellWidth: 26 },
-        3: { cellWidth: 18 },
-        4: { cellWidth: 15 },
-        5: { cellWidth: 15 },
-        6: { cellWidth: 20 },
-        7: { cellWidth: 9 },
-        8: { cellWidth: 9 },
-        9: { cellWidth: 9 },
-        10: { cellWidth: 9 },
-        11: { cellWidth: 9 },
-        12: { cellWidth: 26 }
+        0: { cellWidth: 6 },
+        1: { cellWidth: 24 },
+        2: { cellWidth: 22 },
+        3: { cellWidth: 16 },
+        4: { cellWidth: 13 },
+        5: { cellWidth: 13 },
+        6: { cellWidth: 18 },
+        7: { cellWidth: 8 },
+        8: { cellWidth: 8 },
+        9: { cellWidth: 8 },
+        10: { cellWidth: 8 },
+        11: { cellWidth: 8 },
+        12: { cellWidth: 38 }
       }
     });
 
