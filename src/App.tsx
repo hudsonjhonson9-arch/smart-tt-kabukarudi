@@ -339,7 +339,7 @@ export default function App() {
   const [accSearch, setAccSearch] = useState('');
 
   // Main UI States
-  const [activeTab, setActiveTab] = useState<'beranda' | 'input' | 'lacak' | 'interval' | 'integrasi_gas' | 'accounts' | 'lacar'>('beranda');
+  const [activeTab, setActiveTab] = useState<'beranda' | 'input' | 'lacak' | 'interval' | 'integrasi_gas' | 'accounts' | 'lacar'>(() => (localStorage.getItem('smarttt_activeTab') as any) || 'beranda');
   const [patients, setPatients] = useState<Patient[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('Semua');
@@ -452,6 +452,11 @@ export default function App() {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  // Simpan activeTab ke localStorage agar tidak reset saat reload
+  useEffect(() => {
+    localStorage.setItem('smarttt_activeTab', activeTab);
+  }, [activeTab]);
 
   // Debounced NIK lookup — isi otomatis form jika NIK sudah ada
   useEffect(() => {
