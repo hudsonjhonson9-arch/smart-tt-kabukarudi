@@ -1312,7 +1312,7 @@ export default function App() {
       p.tt2 ? 'Y' : 'N',
       p.tt3 ? 'Y' : 'N',
       p.tt4 ? 'Y' : 'N',
-      p.tt5 ? 'Y' : 'N'',
+      p.tt5 ? 'Y' : 'N',
       calculateKeteranganStatus(p)
     ]);
 
