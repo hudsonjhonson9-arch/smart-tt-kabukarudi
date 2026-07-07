@@ -335,7 +335,7 @@ export default function App() {
   const [accSearch, setAccSearch] = useState('');
 
   // Main UI States
-  const [activeTab, setActiveTab] = useState<'beranda' | 'input' | 'lacak' | 'interval' | 'integrasi_gas' | 'accounts'>('beranda');
+  const [activeTab, setActiveTab] = useState<'beranda' | 'input' | 'lacak' | 'interval' | 'integrasi_gas' | 'accounts' | 'lacar'>('beranda');
   const [patients, setPatients] = useState<Patient[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('Semua');
@@ -1368,6 +1368,95 @@ export default function App() {
     doc.save(`Laporan_SMART_TT_Kabukarudi_${activeDesaStr.replace(/\s+/g, '_')}.pdf`);
   };
 
+  const getAgeFromNik = (nik: string): number => {
+    if (!nik || nik.length < 6) return 0;
+    const d = parseInt(nik.substring(0, 2), 10);
+    const m = parseInt(nik.substring(2, 4), 10) - 1;
+    const y = parseInt(nik.substring(4, 6), 10);
+    const day = d > 40 ? d - 40 : d;
+    const year = 2000 + y;
+    const birth = new Date(year, m, day);
+    if (isNaN(birth.getTime())) return 0;
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--;
+    return age;
+  };
+
+  const getCurrentTtDose = (p: Patient): string => {
+    if (p.tt5) return 'TT5';
+    if (p.tt4) return 'TT4';
+    if (p.tt3) return 'TT3';
+    if (p.tt2) return 'TT2';
+    if (p.tt1) return 'TT1';
+    return 'Belum';
+  };
+
+  const getLastTtDate = (p: Patient): string => {
+    if (p.tanggalTt5) return p.tanggalTt5;
+    if (p.tanggalTt4) return p.tanggalTt4;
+    if (p.tanggalTt3) return p.tanggalTt3;
+    if (p.tanggalTt2) return p.tanggalTt2;
+    if (p.tanggalTt1) return p.tanggalTt1;
+    return '-';
+  };
+
+  const getNextTtDate = (p: Patient): string => {
+    const addDate = (dateStr: string, days: number): string => {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return '-';
+      d.setDate(d.getDate() + days);
+      return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    };
+    if (!p.tt1) return addDate(new Date().toISOString().split('T')[0], 0);
+    if (!p.tt2 && p.tanggalTt1) return addDate(p.tanggalTt1, 28);
+    if (!p.tt3 && p.tanggalTt2) return addDate(p.tanggalTt2, 180);
+    if (!p.tt4 && p.tanggalTt3) return addDate(p.tanggalTt3, 365);
+    if (!p.tt5 && p.tanggalTt4) return addDate(p.tanggalTt4, 365);
+    if (p.tt5) return 'Lengkap';
+    return '-';
+  };
+
+  const exportLacarPdf = () => {
+    const doc = new jsPDF('l', 'mm', 'a4');
+    const rows = patients.filter(p => VILLAGES.includes(p.desa)).map(p => [
+      p.namaLengkapIbu, p.nikIbu, getAgeFromNik(p.nikIbu), p.desa,
+      p.hpht || '-', p.gravida ?? '-', p.paritas ?? '-', p.abortus ?? '-',
+      getCurrentTtDose(p), getLastTtDate(p), getNextTtDate(p), p.keterangan || '-'
+    ]);
+    autoTable(doc, {
+      head: [['Nama Ibu Hamil', 'NIK', 'Umur', 'Desa', 'HPHT', 'G', 'P', 'A', 'Status TT', 'TT Terakhir', 'TT Berikutnya', 'Keterangan']],
+      body: rows,
+      theme: 'grid',
+      styles: { fontSize: 7, cellPadding: 1.5 },
+      headStyles: { fillColor: [13, 148, 136], fontSize: 7, fontStyle: 'bold' },
+      columnStyles: {
+        0: { cellWidth: 40 }, 1: { cellWidth: 30 }, 2: { cellWidth: 10 }, 3: { cellWidth: 22 },
+        4: { cellWidth: 18 }, 5: { cellWidth: 6 }, 6: { cellWidth: 6 }, 7: { cellWidth: 6 },
+        8: { cellWidth: 14 }, 9: { cellWidth: 18 }, 10: { cellWidth: 20 }, 11: { cellWidth: 22 }
+      },
+      margin: { top: 10, right: 5, bottom: 10, left: 5 },
+    });
+    doc.save('Lembar_Lacar_TT.pdf');
+  };
+
+  const exportLacarExcel = () => {
+    const rows = patients.filter(p => VILLAGES.includes(p.desa)).map(p => [
+      p.namaLengkapIbu, p.nikIbu, getAgeFromNik(p.nikIbu), p.desa,
+      p.hpht || '-', p.gravida ?? '-', p.paritas ?? '-', p.abortus ?? '-',
+      getCurrentTtDose(p), getLastTtDate(p), getNextTtDate(p), p.keterangan || '-'
+    ]);
+    let html = `<table><tr><th>Nama Ibu Hamil</th><th>NIK</th><th>Umur</th><th>Desa</th><th>HPHT</th><th>G</th><th>P</th><th>A</th><th>Status TT</th><th>TT Terakhir</th><th>TT Berikutnya</th><th>Keterangan</th></tr>`;
+    rows.forEach(r => { html += '<tr>' + r.map(c => `<td>${c}</td>`).join('') + '</tr>'; });
+    html += '</table>';
+    const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'Lembar_Lacar_TT.xls'; a.click();
+    URL.revokeObjectURL(url);
+  };
+
   // Mock auto-copy script helpers
   const handleCopy = (codeText: string, key: 'gs' | 'html' | 'sheet') => {
     navigator.clipboard.writeText(codeText);
@@ -1654,6 +1743,13 @@ function requestWhatsAppExpress(nomorHp, pesan) {
                     <span className="px-2 py-0.5 text-[10px] bg-red-600 text-white font-extrabold rounded-full animate-pulse">{stats.dropOut}</span>
                   )}
                 </span>
+              </li>
+              <li 
+                onClick={() => setActiveTab('lacar')}
+                className={`px-6 py-3.5 flex items-center gap-4 cursor-pointer transition-all ${activeTab === 'lacar' ? 'bg-sky-600/10 border-l-4 border-sky-500 text-sky-400 font-extrabold' : 'hover:bg-slate-800/60 hover:text-slate-200 text-slate-400'}`}
+              >
+                <Clipboard size={18} />
+                <span className="font-semibold text-xs uppercase tracking-wider">Lembar Lacar</span>
               </li>
               <li 
                 onClick={() => setActiveTab('interval')}
@@ -1993,6 +2089,7 @@ function requestWhatsAppExpress(nomorHp, pesan) {
                   {activeTab === 'lacak' && 'Daftar Drop Out & Tindak Lanjut'}
                   {activeTab === 'interval' && 'Interval Edukasi Selang Dosis'}
                   {activeTab === 'accounts' && 'Kelola Akun Petugas Kesehatan Desa'}
+                  {activeTab === 'lacar' && 'Lembar Lacar Imunisasi TT'}
                 </h2>
                 <p className="text-[10px] text-slate-400 hidden sm:block font-bold tracking-wider truncate">
                   UPTD PUSKESMAS KABUKARUDI • SUMBA BARAT, NTT
@@ -3255,6 +3352,73 @@ function requestWhatsAppExpress(nomorHp, pesan) {
             </div>
           )}
 
+          {activeTab === 'lacar' && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="bg-white rounded-2xl p-5 shadow-xs border border-slate-150 space-y-2">
+                <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                  Lembar Lacar Imunisasi TT
+                </h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Lembar lacar (Laporan Cakupan) Imunisasi TT — menampilkan status imunisasi seluruh ibu hamil terdaftar di wilayah Puskesmas Kabukarudi beserta jadwal TT berikutnya.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <button onClick={exportLacarPdf} className="text-xs font-bold bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl transition-all flex items-center gap-2">
+                  Export PDF (Landscape A4)
+                </button>
+                <button onClick={exportLacarExcel} className="text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl transition-all flex items-center gap-2">
+                  Export Excel
+                </button>
+              </div>
+
+              <div className="bg-white rounded-2xl shadow-xs border border-slate-150 overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-teal-600 text-white text-left">
+                      <th className="p-2 font-bold whitespace-nowrap">Nama Ibu Hamil</th>
+                      <th className="p-2 font-bold whitespace-nowrap">NIK</th>
+                      <th className="p-2 font-bold whitespace-nowrap">Umur</th>
+                      <th className="p-2 font-bold whitespace-nowrap">Desa</th>
+                      <th className="p-2 font-bold whitespace-nowrap">HPHT</th>
+                      <th className="p-2 font-bold whitespace-nowrap">G</th>
+                      <th className="p-2 font-bold whitespace-nowrap">P</th>
+                      <th className="p-2 font-bold whitespace-nowrap">A</th>
+                      <th className="p-2 font-bold whitespace-nowrap">Status TT</th>
+                      <th className="p-2 font-bold whitespace-nowrap">TT Terakhir</th>
+                      <th className="p-2 font-bold whitespace-nowrap">TT Berikutnya</th>
+                      <th className="p-2 font-bold whitespace-nowrap">Keterangan</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {patients.filter(p => VILLAGES.includes(p.desa)).map((p, i) => (
+                      <tr key={p.no} className={i % 2 === 0 ? 'bg-slate-50' : 'bg-white'}>
+                        <td className="p-2 font-semibold text-slate-800 whitespace-nowrap">{p.namaLengkapIbu}</td>
+                        <td className="p-2 text-slate-600 whitespace-nowrap">{p.nikIbu}</td>
+                        <td className="p-2 text-slate-600 whitespace-nowrap">{getAgeFromNik(p.nikIbu)}</td>
+                        <td className="p-2 text-slate-600 whitespace-nowrap">{p.desa}</td>
+                        <td className="p-2 text-slate-600 whitespace-nowrap">{p.hpht || '-'}</td>
+                        <td className="p-2 text-slate-600">{p.gravida ?? '-'}</td>
+                        <td className="p-2 text-slate-600">{p.paritas ?? '-'}</td>
+                        <td className="p-2 text-slate-600">{p.abortus ?? '-'}</td>
+                        <td className="p-2 whitespace-nowrap">
+                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                            getCurrentTtDose(p) === 'Belum' ? 'bg-red-100 text-red-700' :
+                            getCurrentTtDose(p) === 'TT5' ? 'bg-emerald-100 text-emerald-700' :
+                            'bg-amber-100 text-amber-700'
+                          }`}>{getCurrentTtDose(p)}</span>
+                        </td>
+                        <td className="p-2 text-slate-600 whitespace-nowrap">{getLastTtDate(p)}</td>
+                        <td className="p-2 text-slate-600 whitespace-nowrap">{getNextTtDate(p)}</td>
+                        <td className="p-2 text-slate-600 text-[11px]">{p.keterangan || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
             {/* Elegant spacer box at the bottom of the main scroll container to guarantee perfect breathing room */}
             <div className="h-20 md:h-4 w-full shrink-0" />
             </div>
@@ -3282,6 +3446,14 @@ function requestWhatsAppExpress(nomorHp, pesan) {
               <FileText size={22} strokeWidth={activeTab === 'input' ? 2.5 : 1.8} />
               <span className={`text-[11px] font-bold leading-none ${activeTab === 'input' ? 'text-sky-600' : 'text-slate-400'}`}>Input</span>
               {activeTab === 'input' && <span className="absolute bottom-0 w-8 h-0.5 bg-sky-500 rounded-full" />}
+            </button>
+            <button 
+              onClick={() => setActiveTab('lacar')}
+              className={`flex flex-col items-center flex-1 justify-center py-3 gap-1 transition-all cursor-pointer min-h-[60px] ${activeTab === 'lacar' ? 'text-sky-600' : 'text-slate-400'}`}
+            >
+              <Clipboard size={22} strokeWidth={activeTab === 'lacar' ? 2.5 : 1.8} />
+              <span className={`text-[11px] font-bold leading-none ${activeTab === 'lacar' ? 'text-sky-600' : 'text-slate-400'}`}>Lacar</span>
+              {activeTab === 'lacar' && <span className="absolute bottom-0 w-8 h-0.5 bg-sky-500 rounded-full" />}
             </button>
             <button 
               onClick={() => setActiveTab('lacak')}
