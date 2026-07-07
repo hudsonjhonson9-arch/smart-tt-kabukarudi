@@ -505,11 +505,18 @@ export default function App() {
           riwayat.push({ tgl: now, tindakan: value });
           return { ...p, tindakLanjut: value, riwayatTindakLanjut: JSON.stringify(riwayat), tt1: false, tanggalTt1: '', tt2: false, tanggalTt2: '', tt3: false, tanggalTt3: '', tt4: false, tanggalTt4: '', tt5: false, tanggalTt5: '', keterangan: '' };
         }
+        if (value === 'Hubungi Via Whatsapp') {
+          riwayat.push({ tgl: now, tindakan: value });
+        }
         return { ...p, tindakLanjut: value, riwayatTindakLanjut: JSON.stringify(riwayat) };
       });
       savePatients(updated);
       return updated;
     });
+    if (value === 'Hubungi Via Whatsapp') {
+      const p = patients.find(x => x.no === no);
+      if (p) requestWhatsappModal(p);
+    }
   };
 
   const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1569,7 +1576,7 @@ export default function App() {
     const d = new Date(parseInt(parts[2]), monthMap[parts[1]] || 0, parseInt(parts[0]));
     if (isNaN(d.getTime())) return '-';
     if (d >= new Date()) return '-';
-    return getCurrentTtDose(p) === 'Belum' ? 'Kunjungan Rumah' : 'Pengulangan Dosis';
+    return getCurrentTtDose(p) === 'Belum' ? 'Hubungi Via Whatsapp' : 'Pengulangan Dosis';
   };
 
   const exportLacarPdf = () => {
@@ -3441,13 +3448,13 @@ function requestWhatsAppExpress(nomorHp, pesan) {
                                 value={p.tindakLanjut || ''}
                                 onChange={e => handleTindakLanjutChange(p.no, e.target.value)}
                                 className={`text-[11px] font-bold px-1.5 py-1.5 rounded-lg border cursor-pointer outline-none ${
-                                  p.tindakLanjut === 'Kunjungan Rumah' ? 'bg-blue-50 border-blue-200 text-blue-700' :
+                                  p.tindakLanjut === 'Hubungi Via Whatsapp' ? 'bg-blue-50 border-blue-200 text-blue-700' :
                                   p.tindakLanjut === 'Pengulangan Dosis' ? 'bg-purple-50 border-purple-200 text-purple-700' :
                                   'bg-white border-slate-200 text-slate-400'
                                 }`}
                               >
                                 <option value="">Tindak Lanjut</option>
-                                <option value="Kunjungan Rumah">🏠 Kunjungan Rumah</option>
+                                <option value="Hubungi Via Whatsapp">📱 Hubungi Via Whatsapp</option>
                                 <option value="Pengulangan Dosis">💉 Pengulangan Dosis</option>
                               </select>
                               <button onClick={() => requestWhatsappModal(p)} className={`p-2 rounded-lg text-white font-bold text-xs flex items-center space-x-1 cursor-pointer transition-colors ${lacakSubFilter === 'dropout' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-amber-600 hover:bg-amber-700'}`}>
@@ -3514,13 +3521,13 @@ function requestWhatsAppExpress(nomorHp, pesan) {
                                 value={p.tindakLanjut || ''}
                                 onChange={e => handleTindakLanjutChange(p.no, e.target.value)}
                                 className={`text-[11px] font-bold px-1 py-0.5 rounded-lg border cursor-pointer outline-none ${
-                                  p.tindakLanjut === 'Kunjungan Rumah' ? 'bg-blue-50 border-blue-200 text-blue-700' :
+                                  p.tindakLanjut === 'Hubungi Via Whatsapp' ? 'bg-blue-50 border-blue-200 text-blue-700' :
                                   p.tindakLanjut === 'Pengulangan Dosis' ? 'bg-purple-50 border-purple-200 text-purple-700' :
                                   'bg-white border-slate-200 text-slate-400'
                                 }`}
                               >
                                 <option value="">-</option>
-                                <option value="Kunjungan Rumah">🏠 Kunjungan Rumah</option>
+                                <option value="Hubungi Via Whatsapp">📱 Hubungi Via Whatsapp</option>
                                 <option value="Pengulangan Dosis">💉 Pengulangan Dosis</option>
                               </select>
                             </td>
