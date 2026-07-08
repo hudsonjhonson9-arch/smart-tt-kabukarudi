@@ -1517,11 +1517,11 @@ export default function App() {
   };
 
   const getAgeFromNik = (nik: string): number => {
-    if (!nik || nik.length < 6) return 0;
+    if (!nik || nik.length < 12) return 0;
     try {
-      let day = parseInt(nik.substring(0, 2), 10);
-      const month = parseInt(nik.substring(2, 4), 10) - 1;
-      let year = parseInt(nik.substring(4, 6), 10);
+      let day = parseInt(nik.substring(6, 8), 10);
+      const month = parseInt(nik.substring(8, 10), 10) - 1;
+      let year = parseInt(nik.substring(10, 12), 10);
       if (day > 40) day = day - 40;
       const curYear = new Date().getFullYear();
       const fullYear = year > (curYear % 100) ? 1900 + year : 2000 + year;
