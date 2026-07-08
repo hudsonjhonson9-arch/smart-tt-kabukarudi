@@ -1517,20 +1517,57 @@ export default function App() {
   };
 
   const getAgeFromNik = (nik: string): number => {
-    if (!nik || nik.length < 6) return 0;
-    const d = parseInt(nik.substring(0, 2), 10);
-    const m = parseInt(nik.substring(2, 4), 10) - 1;
-    const y = parseInt(nik.substring(4, 6), 10);
-    const day = d > 40 ? d - 40 : d;
-    const year = 2000 + y;
-    const birth = new Date(year, m, day);
-    if (isNaN(birth.getTime())) return 0;
+  if (!nik || nik.length < 16) return 0;
+  
+  try {
+    // Ambil 6 digit pertama (tanggal, bulan, tahun)
+    let day = parseInt(nik.substring(0, 2), 10);
+    const month = parseInt(nik.substring(2, 4), 10) - 1; // 0-indexed
+    let year = parseInt(nik.substring(4, 6), 10);
+    
+    // Koreksi untuk NIK wanita (tanggal + 40)
+    if (day > 40) {
+      day = day - 40;
+    }
+    
+    // Tentukan abad (asumsi: 00-24 = 2000-an, 25-99 = 1900-an)
+    // Sesuaikan dengan tahun saat ini untuk akurasi
+    const currentYear = new Date().getFullYear();
+    const currentCentury = Math.floor(currentYear / 100) * 100;
+    
+    // Jika tahun 2 digit > tahun saat ini (2 digit), maka masuk abad sebelumnya
+    const currentYearTwoDigit = currentYear % 100;
+    if (year > currentYearTwoDigit) {
+      year = (Math.floor(currentYear / 100) - 1) * 100 + year;
+    } else {
+      year = currentCentury + year;
+    }
+    
+    // Buat tanggal lahir
+    const birthDate = new Date(year, month, day);
+    
+    // Validasi tanggal
+    if (isNaN(birthDate.getTime())) {
+      return 0;
+    }
+    
+    // Hitung umur dengan akurat
     const today = new Date();
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDiff = today.getMonth() - birth.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--;
-    return age;
-  };
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    const dayDiff = today.getDate() - birthDate.getDate();
+    
+    // Koreksi jika bulan atau hari belum lewat
+    if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+      age--;
+    }
+    
+    return Math.max(0, age); // Tidak boleh negatif
+  } catch (error) {
+    console.error('Error parsing NIK:', error);
+    return 0;
+  }
+};
 
   const getCurrentTtDose = (p: Patient): string => {
     if (p.tt5) return 'TT5';
