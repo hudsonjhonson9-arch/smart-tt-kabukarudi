@@ -1516,62 +1516,23 @@ export default function App() {
     doc.save(`Laporan_SMART_TT_Kabukarudi_${activeDesaStr.replace(/\s+/g, '_')}.pdf`);
   };
 
-const getAgeFromNik = (nik: string): number => {
-  console.log('🔍 Memproses NIK:', nik);
-  
-  if (!nik || nik.length !== 16) {
-    console.warn('❌ Panjang NIK:', nik?.length);
-    return 0;
-  }
-  
-  try {
-    let day = parseInt(nik.substring(0, 2), 10);
-    const month = parseInt(nik.substring(2, 4), 10) - 1;
-    let year = parseInt(nik.substring(4, 6), 10);
-    
-    console.log('📅 Data mentah:', { day, month: month + 1, year });
-    
-    if (day > 40) {
-      day = day - 40;
-      console.log('👩 Setelah koreksi wanita:', { day });
-    }
-    
-    const currentYear = new Date().getFullYear();
-    const currentYearTwoDigit = currentYear % 100;
-    
-    let fullYear;
-    if (year > currentYearTwoDigit) {
-      fullYear = 1900 + year;
-    } else {
-      fullYear = 2000 + year;
-    }
-    
-    console.log('📆 Tahun penuh:', fullYear);
-    
-    const birthDate = new Date(fullYear, month, day);
-    console.log('🎂 Tanggal lahir:', birthDate.toISOString().split('T')[0]);
-    
-    if (isNaN(birthDate.getTime())) {
-      console.warn('❌ Tanggal tidak valid');
-      return 0;
-    }
-    
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    const dayDiff = today.getDate() - birthDate.getDate();
-    
-    if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
-      age--;
-    }
-    
-    console.log('✅ Umur:', age);
-    return age;
-  } catch (error) {
-    console.error('❌ Error:', error);
-    return 0;
-  }
-};
+  const getAgeFromNik = (nik: string): number => {
+    if (!nik || nik.length < 6) return 0;
+    try {
+      let day = parseInt(nik.substring(0, 2), 10);
+      const month = parseInt(nik.substring(2, 4), 10) - 1;
+      let year = parseInt(nik.substring(4, 6), 10);
+      if (day > 40) day = day - 40;
+      const curYear = new Date().getFullYear();
+      const fullYear = year > (curYear % 100) ? 1900 + year : 2000 + year;
+      const birth = new Date(fullYear, month, day);
+      if (isNaN(birth.getTime())) return 0;
+      let age = curYear - birth.getFullYear();
+      const mDiff = new Date().getMonth() - birth.getMonth();
+      if (mDiff < 0 || (mDiff === 0 && new Date().getDate() < birth.getDate())) age--;
+      return age;
+    } catch { return 0; }
+  };
 
   const getCurrentTtDose = (p: Patient): string => {
     if (p.tt5) return 'TT5';
