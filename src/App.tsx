@@ -1517,71 +1517,91 @@ export default function App() {
   };
 
 const getAgeFromNik = (nik: string): number => {
-  // Validasi: NIK harus 16 digit
+  // VALIDASI: NIK harus 16 digit
   if (!nik || nik.length !== 16) {
-    console.warn('NIK tidak valid (harus 16 digit):', nik);
+    console.warn('❌ NIK tidak valid (harus 16 digit):', nik);
     return 0;
   }
   
   try {
-    // Ekstrak tanggal lahir dari 6 digit pertama NIK
+    // EKSTRAK: 6 digit pertama NIK
     let day = parseInt(nik.substring(0, 2), 10);
-    const month = parseInt(nik.substring(2, 4), 10) - 1; // Bulan (0-indexed)
+    const month = parseInt(nik.substring(2, 4), 10) - 1; // 0-indexed
     let year = parseInt(nik.substring(4, 6), 10);
     
-    // Koreksi untuk NIK wanita (tanggal + 40)
+    // KOREKSI WANITA: Jika tanggal > 40, kurangi 40
     if (day > 40) {
       day = day - 40;
     }
     
-    // Validasi tanggal
+    // VALIDASI: Pastikan tanggal, bulan, tahun valid
     if (day < 1 || day > 31 || month < 0 || month > 11 || year < 0 || year > 99) {
-      console.warn('Format tanggal tidak valid:', { day, month: month + 1, year });
+      console.warn('❌ Format NIK tidak valid:', { day, month: month + 1, year });
       return 0;
     }
     
-    // Tentukan tahun yang benar (logika untuk NIK Indonesia)
+    // TENTUKAN TAHUN: Logika untuk NIK Indonesia
     const currentYear = new Date().getFullYear();
     const currentYearTwoDigit = currentYear % 100;
-    
-    // Jika tahun 2 digit lebih besar dari tahun sekarang, berarti abad sebelumnya
-    // Contoh: 98 > 26 → 1998, 05 < 26 → 2005
     let fullYear;
+    
+    // Jika tahun 2 digit > tahun sekarang → 1900-an
+    // Contoh: year=95, sekarang 2026 → 1995
+    // Contoh: year=05, sekarang 2026 → 2005
     if (year > currentYearTwoDigit) {
       fullYear = 1900 + year;
     } else {
       fullYear = 2000 + year;
     }
     
-    // Buat tanggal lahir
+    // BUAT TANGGAL LAHIR
     const birthDate = new Date(fullYear, month, day);
     
-    // Validasi tanggal lahir
+    // VALIDASI: Tanggal lahir valid
     if (isNaN(birthDate.getTime())) {
-      console.warn('Tanggal lahir tidak valid:', { fullYear, month, day });
+      console.warn('❌ Tanggal lahir tidak valid:', { fullYear, month, day });
       return 0;
     }
     
-    // Hitung umur dengan akurat
+    // HITUNG UMUR DENGAN AKURAT
     const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
     const dayDiff = today.getDate() - birthDate.getDate();
     
-    // Koreksi jika ulang tahun belum lewat tahun ini
+    // Koreksi jika ulang tahun belum lewat
     if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
       age--;
     }
     
-    // Validasi: Umur harus masuk akal (15-50 tahun untuk ibu hamil)
+    // VALIDASI AKHIR: Umur harus masuk akal (10-60 tahun untuk ibu hamil)
     if (age < 10 || age > 60) {
-      console.warn('Umur tidak masuk akal:', age, 'untuk NIK:', nik);
+      console.warn(`⚠️ Umur tidak masuk akal (${age} tahun) untuk NIK:`, nik);
+      
+      // Coba alternatif: jika tahun > 60 dan umur terlalu tua, coba kurangi 100 tahun
+      if (age > 60) {
+        const alternativeYear = fullYear + 100;
+        const altBirthDate = new Date(alternativeYear, month, day);
+        if (!isNaN(altBirthDate.getTime())) {
+          let altAge = today.getFullYear() - altBirthDate.getFullYear();
+          const altMonthDiff = today.getMonth() - altBirthDate.getMonth();
+          const altDayDiff = today.getDate() - altBirthDate.getDate();
+          if (altMonthDiff < 0 || (altMonthDiff === 0 && altDayDiff < 0)) {
+            altAge--;
+          }
+          if (altAge >= 10 && altAge <= 60) {
+            console.log(`✅ Menggunakan tahun alternatif: ${alternativeYear} → umur ${altAge}`);
+            return altAge;
+          }
+        }
+      }
+      
       return 0;
     }
     
-    return Math.max(0, age);
+    return age;
   } catch (error) {
-    console.error('Error parsing NIK:', nik, error);
+    console.error('❌ Error parsing NIK:', nik, error);
     return 0;
   }
 };
