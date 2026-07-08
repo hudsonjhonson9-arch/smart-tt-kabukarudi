@@ -1517,60 +1517,71 @@ export default function App() {
   };
 
 const getAgeFromNik = (nik: string): number => {
-  if (!nik || nik.length < 16) return 0;
+  // Validasi: NIK harus 16 digit
+  if (!nik || nik.length !== 16) {
+    console.warn('NIK tidak valid (harus 16 digit):', nik);
+    return 0;
+  }
   
   try {
-    // Ekstrak tanggal lahir dari NIK
+    // Ekstrak tanggal lahir dari 6 digit pertama NIK
     let day = parseInt(nik.substring(0, 2), 10);
-    const month = parseInt(nik.substring(2, 4), 10) - 1;
-    const yearTwoDigit = parseInt(nik.substring(4, 6), 10);
+    const month = parseInt(nik.substring(2, 4), 10) - 1; // Bulan (0-indexed)
+    let year = parseInt(nik.substring(4, 6), 10);
     
-    // Koreksi untuk wanita
+    // Koreksi untuk NIK wanita (tanggal + 40)
     if (day > 40) {
       day = day - 40;
     }
     
-    // Validasi dasar
-    if (day < 1 || day > 31 || month < 0 || month > 11) {
+    // Validasi tanggal
+    if (day < 1 || day > 31 || month < 0 || month > 11 || year < 0 || year > 99) {
+      console.warn('Format tanggal tidak valid:', { day, month: month + 1, year });
       return 0;
     }
     
-    // Tentukan tahun dengan metode yang lebih akurat
+    // Tentukan tahun yang benar (logika untuk NIK Indonesia)
     const currentYear = new Date().getFullYear();
-    const currentCentury = Math.floor(currentYear / 100) * 100;
+    const currentYearTwoDigit = currentYear % 100;
     
-    // Coba kedua kemungkinan abad
-    const possibleYears = [
-      currentCentury + yearTwoDigit,
-      currentCentury - 100 + yearTwoDigit,
-      currentCentury + 100 + yearTwoDigit
-    ];
-    
-    let validAge = 0;
-    const today = new Date();
-    
-    for (const year of possibleYears) {
-      const birthDate = new Date(year, month, day);
-      if (isNaN(birthDate.getTime())) continue;
-      
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
-      const dayDiff = today.getDate() - birthDate.getDate();
-      
-      if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
-        age--;
-      }
-      
-      // Pilih umur yang masuk akal (15-50 tahun untuk ibu hamil)
-      if (age >= 15 && age <= 50) {
-        validAge = age;
-        break;
-      }
+    // Jika tahun 2 digit lebih besar dari tahun sekarang, berarti abad sebelumnya
+    // Contoh: 98 > 26 → 1998, 05 < 26 → 2005
+    let fullYear;
+    if (year > currentYearTwoDigit) {
+      fullYear = 1900 + year;
+    } else {
+      fullYear = 2000 + year;
     }
     
-    return validAge;
+    // Buat tanggal lahir
+    const birthDate = new Date(fullYear, month, day);
+    
+    // Validasi tanggal lahir
+    if (isNaN(birthDate.getTime())) {
+      console.warn('Tanggal lahir tidak valid:', { fullYear, month, day });
+      return 0;
+    }
+    
+    // Hitung umur dengan akurat
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    const dayDiff = today.getDate() - birthDate.getDate();
+    
+    // Koreksi jika ulang tahun belum lewat tahun ini
+    if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+      age--;
+    }
+    
+    // Validasi: Umur harus masuk akal (15-50 tahun untuk ibu hamil)
+    if (age < 10 || age > 60) {
+      console.warn('Umur tidak masuk akal:', age, 'untuk NIK:', nik);
+      return 0;
+    }
+    
+    return Math.max(0, age);
   } catch (error) {
-    console.error('Error parsing NIK:', error);
+    console.error('Error parsing NIK:', nik, error);
     return 0;
   }
 };
