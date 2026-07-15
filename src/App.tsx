@@ -2161,7 +2161,7 @@ function requestWhatsAppExpress(nomorHp, pesan) {
                 <img src="/logo_smart_tt.png" alt="SMART TT" className="w-16 h-16 object-contain mx-auto mb-2" />
                 <h2 className="text-2xl font-black text-slate-800 tracking-tight">SMART TT KABUKARUDI</h2>
                 <p className="text-xs font-medium text-slate-500 max-w-xs mx-auto">
-                  Sistem Pemantauan Tetanus Toxoid Ibu Hamil UPTD Puskesmas Kabukarudi, Sumba Barat
+                  Sistem Monitoring dan Tracking Imunisasi Tetanus Toxoid Ibu Hamil UPTD Puskesmas Kabukarudi, Sumba Barat
                 </p>
               </div>
 
@@ -2302,7 +2302,7 @@ function requestWhatsAppExpress(nomorHp, pesan) {
                     </span>
                   </h3>
                   <p className="text-slate-500 text-xs">
-                    Sistem Pemantauan Tetanus Toxoid Ibu Hamil secara langsung.
+                    Sistem Monitoring dan Tracking Imunisasi Tetanus Toxoid Ibu Hamil secara langsung.
                   </p>
                 </div>
                 <div className="text-[11px] font-mono text-slate-400 text-right hidden lg:block bg-slate-50 p-2.5 rounded-xl border border-slate-100 font-bold">
