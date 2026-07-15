@@ -1986,7 +1986,7 @@ function requestWhatsAppExpress(nomorHp, pesan) {
                   SMART TT
                 </h1>
                 <p className="text-sm font-medium text-teal-200/80 max-w-sm mx-auto leading-relaxed">
-                  Sistem Monitoring dan Tracking Imunisasi<br /> Tetanus Toxoid Ibu Hamil<br />
+                  Sistem Monitoring dan Tracking<br />Imunisasi Tetanus Toxoid Ibu Hamil<br />
                   UPTD Puskesmas Kabukarudi, Sumba Barat, NTT
                 </p>
               </div>
